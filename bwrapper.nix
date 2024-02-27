@@ -168,6 +168,7 @@ buildFHSEnv {
     "--bind \"$HOME/.bwrapper/${pkg.pname}/cache\" \"$HOME/.cache\""
     "--setenv DBUS_SESSION_BUS_ADDRESS unix:path=\"$XDG_RUNTIME_DIR/bus\""
     "--setenv DISPLAY \"$DISPLAY\""
+    "--setenv NOTIFY_IGNORE_PORTAL 1"
     "--setenv WAYLAND_DISPLAY \"$WAYLAND_DISPLAY\""
     "--ro-bind \"$xauth_file\" \"$xauth_file\""
   ]
