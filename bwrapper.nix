@@ -4,12 +4,13 @@
 , appendBwrapArgs ? [ ]
 , additionalFolderPaths ? [ ]
 , additionalFolderPathsReadWrite ? [ ]
+, additionalSandboxPaths ? [ ]
 , dbusTalks ? [ ]
 , dbusOwns ? [ ]
 , systemDbusTalks ? [ ]
 , addPkgs ? [ ]
-, appId
-, overwriteExec ? null
+, overwriteExec ? false
+, execArgs ? ""
 , unshareIpc ? true
 , unshareUser ? false
 , unshareUts ? false
@@ -17,7 +18,7 @@
 , unsharePid ? true
 , unshareNet ? false
 , dieWithParent ? true
-, privateTmp ? false
+, privateTmp ? true
 }:
 let
   standardDbusTalks = [
@@ -63,18 +64,36 @@ let
   systemDbusArgs = (lib.concatMapStrings (e: "--talk=${e} ") (lib.lists.unique (systemDbusTalks ++ standardSystemDbusTalks)));
 
   runtimeDirBinds = [
+    # we can't use $WAYLAND_DISPLAY here since if it's unset, it will just glob to /run/user/$uid/
     "wayland-0"
+    "wayland-1"
     "pipewire-0"
     "pulse"
   ];
 
   runtimeDirBindsArgs = map (e: "--ro-bind-try \"$XDG_RUNTIME_DIR/${e}\" \"$XDG_RUNTIME_DIR/${e}\"") runtimeDirBinds;
+
+  appId = "nix.bwrapper.${builtins.replaceStrings [ "-" ] [ "_" ] pkg.pname}";
+
+  mkSandboxPaths = builtins.concatStringsSep "\n" (map
+    (e:
+      let
+        reservedMsg = "Sandbox path '${e.name}' is reserved. Please rename your sandbox path.";
+      in
+      assert lib.assertMsg (e.name != "config") reservedMsg;
+      assert lib.assertMsg (e.name != "local") reservedMsg;
+      assert lib.assertMsg (e.name != "cache") reservedMsg;
+      assert lib.assertMsg (e.name != ".flatpak-info") reservedMsg;
+      ''test -d "$HOME/.bwrapper/${pkg.pname}/${e.name} || mkdir -p "$HOME/.bwrapper/${pkg.pname}/${e.name}"'')
+    additionalSandboxPaths);
+
+  mountSandboxPaths = map (e: ''--bind "$HOME/.bwrapper/${pkg.pname}/${e.name}" "${e.path}"'') additionalSandboxPaths;
 in
-# assert dieWithParent -> unsharePid;
+assert lib.assertMsg (dieWithParent -> unsharePid) "dieWithParent requires unsharePid to be true.";
 
 buildFHSEnv {
   inherit (pkg) pname version meta;
-  inherit runScript unshareIpc unshareUser unshareUts unshareCgroup unsharePid unshareNet;
+  inherit runScript unshareIpc unshareUser unshareUts unshareCgroup unsharePid unshareNet privateTmp;
 
   name = null;
 
@@ -89,16 +108,20 @@ buildFHSEnv {
 
     # this is needed for exit code 0
     true
-  '' + (lib.optionalString (overwriteExec != null) ''
-    sed -i 's/^Exec=.*/Exec=${overwriteExec}/' $out/share/applications/*.desktop
+  '' + (lib.optionalString overwriteExec ''
+    sed -i "s|^Exec=.*|Exec=$out/bin/${runScript} ${execArgs}|" $out/share/applications/*.desktop
   '');
 
   extraPreBwrapCmds = ''
+    trap 'trap - SIGTERM && kill -- -$$' SIGINT SIGTERM EXIT
+
     test -d "$XDG_RUNTIME_DIR/app/${appId}" || mkdir "$XDG_RUNTIME_DIR/app/${appId}"
+    test -d "$XDG_RUNTIME_DIR/doc/by-app/${appId}" || mkdir -p "$XDG_RUNTIME_DIR/doc/by-app/${appId}"
     test -d "$HOME/.bwrapper/${pkg.pname}/config" || mkdir -p "$HOME/.bwrapper/${pkg.pname}/config"
     test -d "$HOME/.bwrapper/${pkg.pname}/local" || mkdir -p "$HOME/.bwrapper/${pkg.pname}/local"
     test -d "$HOME/.bwrapper/${pkg.pname}/cache" || mkdir -p "$HOME/.bwrapper/${pkg.pname}/cache"
     test -f "$HOME/.bwrapper/${pkg.pname}/.flatpak-info" || printf "[Application]\nname=${appId}\n" > "$HOME/.bwrapper/${pkg.pname}/.flatpak-info"
+    ${mkSandboxPaths}
 
     set_up_dbus_proxy() {
       ${bubblewrap}/bin/bwrap \
@@ -137,6 +160,7 @@ buildFHSEnv {
     "--tmpfs /home"
     "--tmpfs /mnt"
     "--tmpfs \"$XDG_RUNTIME_DIR\""
+    "--bind \"$XDG_RUNTIME_DIR/doc/by-app/${appId}\" \"$XDG_RUNTIME_DIR/doc\""
     "--bind \"$XDG_RUNTIME_DIR/app/${appId}/bus\" \"$XDG_RUNTIME_DIR/bus\""
     "--bind \"$XDG_RUNTIME_DIR/app/${appId}/bus_system\" /run/dbus/system_bus_socket"
     "--bind \"$HOME/.bwrapper/${pkg.pname}/config\" \"$HOME/.config\""
@@ -146,9 +170,10 @@ buildFHSEnv {
     "--setenv DISPLAY \"$DISPLAY\""
     "--setenv WAYLAND_DISPLAY \"$WAYLAND_DISPLAY\""
     "--ro-bind \"$xauth_file\" \"$xauth_file\""
-    "--ro-bind \"/sys/devices\" \"/sys/devices\""
   ]
+  ++ mountSandboxPaths
   ++ runtimeDirBindsArgs
+  # common paths for cursor themes, fonts, etc.
   ++ (folderPaths [
     "$HOME/.icons"
     "$HOME/.fonts"
