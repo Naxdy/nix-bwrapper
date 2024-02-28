@@ -159,7 +159,7 @@ buildFHSEnv {
     "--new-session"
     "--tmpfs /home"
     "--tmpfs /mnt"
-    "--tmpfs \"$XDG_RUNTIME_DIR\""
+    "--tmpfs /run"
     "--bind \"$XDG_RUNTIME_DIR/doc/by-app/${appId}\" \"$XDG_RUNTIME_DIR/doc\""
     "--bind \"$XDG_RUNTIME_DIR/app/${appId}/bus\" \"$XDG_RUNTIME_DIR/bus\""
     "--bind \"$XDG_RUNTIME_DIR/app/${appId}/bus_system\" /run/dbus/system_bus_socket"
