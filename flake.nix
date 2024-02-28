@@ -22,9 +22,27 @@
         appId = "com.brave.Browser";
         runScript = "brave";
       };
+
+      packages.bottles-wrapped = pkgs.bottles.override {
+        buildFHSEnv = pkgs.bwrapperFHSEnv {
+          unshareIpc = false;
+          systemDbusTalks = [
+            "org.freedesktop.UDisks2"
+          ];
+          dbusOwns = [
+            "com.usebottles.bottles"
+          ];
+        };
+      };
     })) // {
     overlays.default = final: prev: {
-      bwrapper = final.callPackage ./bwrapper.nix { };
+      bwrapper = final.callPackage ./bwrapper.nix {
+        inherit nixpkgs;
+      };
+
+      bwrapperFHSEnv = final.callPackage ./bwrapperFHSEnv.nix {
+        inherit nixpkgs;
+      };
     };
   };
 }
