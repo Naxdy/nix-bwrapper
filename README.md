@@ -8,7 +8,25 @@ The `flake.nix` contains a minimal example using Brave browser.
 
 Import this flake like you would any other. It provides an overlay, which in turn provides the `bwrapper` "package" (it's a function, really).
 
-Then, wrap any native package of your choosing using `bwrapper`. Note: Packages that already make use of `buildFHSEnv` (e.g. `bottles`) are currently NOT supported. They may work, but I haven't tested them thoroughly yet.
+Then, wrap any native package of your choosing using `bwrapper`.
+
+Packages that are already using `buildFHSEnv` can be configured to use `bwrapperFHSEnv` instead, like so:
+
+```nix
+{
+    bottles-wrapped = pkgs.bottles.override {
+            buildFHSEnv = pkgs.bwrapperFHSEnv {
+            unshareIpc = false;
+            systemDbusTalks = [
+                "org.freedesktop.UDisks2"
+            ];
+            dbusOwns = [
+                "com.usebottles.bottles"
+            ];
+        };
+    };
+}
+```
 
 ### `bwrapper`
 
@@ -20,6 +38,12 @@ The `bwrapper` function takes in a number of arguments and returns a package con
 - `runScript` (string, required)
 
     The name of the application (usually a file in the `bin` folder) to be run.
+- `forceAppId` (string, optional)
+
+    The app ID to use in the `/.flatpak-info` file. If left empty, this will be set to `nix.bwrapper.[package-name]`. This should not be set manually unless the app is misbehaving for some reason.
+- `dbusLogging` (boolean, optional)
+
+    Whether to enable logging from `xdg-dbus-proxy`, useful for debugging purposes. Default false.
 - `appendBwrapArgs` (array of string, optional)
 
     Arguments to be appended to the `bwrap` call to your sandboxed application. See `man bwrap` for help.
