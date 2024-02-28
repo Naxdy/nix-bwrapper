@@ -61,7 +61,7 @@ let
   name = pname + versionStr;
 
 in
-fhsEnvArgs.buildFHSEnv (args // (builtins.removeAttrs fhsEnvArgs [ "buildFHSEnv" ]) // {
+builtins.trace "WARNING: bwrapperFHSEnv (used for ${pname}) is still experimental!" (fhsEnvArgs.buildFHSEnv (args // (builtins.removeAttrs fhsEnvArgs [ "buildFHSEnv" ]) // {
   inherit name;
 
   version = null;
@@ -74,4 +74,4 @@ fhsEnvArgs.buildFHSEnv (args // (builtins.removeAttrs fhsEnvArgs [ "buildFHSEnv"
   extraPreBwrapCmds = (args.extraPreBwrapCmds or "") + fhsEnvArgs.extraPreBwrapCmds;
 
   extraBwrapArgs = (args.extraBwrapArgs or [ ]) ++ fhsEnvArgs.extraBwrapArgs;
-})
+}))
