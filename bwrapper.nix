@@ -1,4 +1,4 @@
-{ buildFHSEnv, lib, xdg-dbus-proxy, bubblewrap, coreutils }:
+{ nixpkgs, runCommandLocal, callPackage, lib, xdg-dbus-proxy, bubblewrap, coreutils }:
 { pkg
 , runScript
 , appendBwrapArgs ? [ ]
@@ -64,10 +64,6 @@ let
   systemDbusArgs = (lib.concatMapStrings (e: "--talk=${e} ") (lib.lists.unique (systemDbusTalks ++ standardSystemDbusTalks)));
 
   runtimeDirBinds = [
-    # we can't use $WAYLAND_DISPLAY here since if it's unset, it will just glob to /run/user/$uid/
-    "wayland-0"
-    "wayland-1"
-    "pipewire-0"
     "pulse"
   ];
 
@@ -88,6 +84,24 @@ let
     additionalSandboxPaths);
 
   mountSandboxPaths = map (e: ''--bind "$HOME/.bwrapper/${pkg.pname}/${e.name}" "${e.path}"'') additionalSandboxPaths;
+
+  # we don't want to `exec` the final file, to avoid zombie processes
+  buildFHSEnvPatched = builtins.replaceStrings
+    [ "exec " "./buildFHSEnv.nix" ]
+    [ "" "${nixpkgs}/pkgs/build-support/build-fhsenv-bubblewrap/buildFHSEnv.nix" ]
+    (builtins.readFile "${nixpkgs}/pkgs/build-support/build-fhsenv-bubblewrap/default.nix");
+
+  patchedPkg = runCommandLocal "build-fhsenv-bubblewrap-patched"
+    {
+      inherit buildFHSEnvPatched;
+    } ''
+    echo "$buildFHSEnvPatched" > $out
+    chmod +x $out
+  '';
+
+  buildFHSEnv = callPackage
+    "${patchedPkg}"
+    { };
 in
 assert lib.assertMsg (dieWithParent -> unsharePid) "dieWithParent requires unsharePid to be true.";
 
@@ -151,8 +165,28 @@ buildFHSEnv {
     set_up_system_dbus_proxy &
     ${coreutils}/bin/sleep 0.1
 
-    # TODO: idk if this is optimal...
-    xauth_file=$(ls "$XDG_RUNTIME_DIR/xauth_"*)
+    # there shouldn't be more than 1 xauth file, but best to be safe
+    declare -a x11_auth_binds
+    xauth_files=$(ls "$XDG_RUNTIME_DIR/xauth_"*)
+
+    for file in $xauth_files; do
+      x11_auth_binds+=(--ro-bind "$file" "$file")
+    done
+
+    # there also shouldn't be more than 1 of these sockets in theory, but best to be safe
+    declare -a wayland_binds
+    wayland_sockets=$(ls "$XDG_RUNTIME_DIR/wayland-"*)
+
+    for file in $wayland_sockets; do
+      wayland_binds+=(--ro-bind "$file" "$file")
+    done
+
+    declare -a pipewire_binds
+    pipewire_sockets=$(ls "$XDG_RUNTIME_DIR/pipewire-"*)
+
+    for file in $pipewire_sockets; do
+      pipewire_binds+=(--ro-bind "$file" "$file")
+    done
   '' + (builtins.concatStringsSep "\n" (map (e: "test -d \"${e}\" || mkdir -p \"${e}\"") additionalFolderPathsReadWrite));
 
   extraBwrapArgs = [
@@ -170,7 +204,9 @@ buildFHSEnv {
     "--setenv DISPLAY \"$DISPLAY\""
     "--setenv NOTIFY_IGNORE_PORTAL 1"
     "--setenv WAYLAND_DISPLAY \"$WAYLAND_DISPLAY\""
-    "--ro-bind \"$xauth_file\" \"$xauth_file\""
+    "\"$\{x11_auth_binds[@]\}\""
+    "\"$\{wayland_binds[@]\}\""
+    "\"$\{pipewire_binds[@]\}\""
   ]
   ++ mountSandboxPaths
   ++ runtimeDirBindsArgs
