@@ -132,7 +132,7 @@ assert lib.assertMsg (dieWithParent -> unsharePid) "dieWithParent requires unsha
   extraPreBwrapCmds = ''
     trap 'trap - SIGTERM && kill -- -$$' SIGINT SIGTERM EXIT
 
-    test -d "$XDG_RUNTIME_DIR/app/${appId}" || mkdir "$XDG_RUNTIME_DIR/app/${appId}"
+    test -d "$XDG_RUNTIME_DIR/app/${appId}" || mkdir -p "$XDG_RUNTIME_DIR/app/${appId}"
     test -d "$XDG_RUNTIME_DIR/doc/by-app/${appId}" || mkdir -p "$XDG_RUNTIME_DIR/doc/by-app/${appId}"
     test -d "$HOME/.bwrapper/${pkg.pname}/config" || mkdir -p "$HOME/.bwrapper/${pkg.pname}/config"
     test -d "$HOME/.bwrapper/${pkg.pname}/local" || mkdir -p "$HOME/.bwrapper/${pkg.pname}/local"
