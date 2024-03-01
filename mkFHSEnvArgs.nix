@@ -140,6 +140,8 @@ assert lib.assertMsg (dieWithParent -> unsharePid) "dieWithParent requires unsha
     test -f "$HOME/.bwrapper/${pkg.pname}/.flatpak-info" || printf "[Application]\nname=${appId}\n" > "$HOME/.bwrapper/${pkg.pname}/.flatpak-info"
     ${mkSandboxPaths}
 
+    ${lib.optionalString privateTmp ''test -d /tmp/app/${appId} || mkdir -p /tmp/app/${appId}''}
+
     set_up_dbus_proxy() {
       ${bubblewrap}/bin/bwrap \
         --new-session \
@@ -215,6 +217,7 @@ assert lib.assertMsg (dieWithParent -> unsharePid) "dieWithParent requires unsha
     "\"$\{wayland_binds[@]\}\""
     "\"$\{pipewire_binds[@]\}\""
   ]
+  ++ (lib.optional privateTmp "--bind /tmp/app/${appId} /tmp")
   ++ mountSandboxPaths
   ++ runtimeDirBindsArgs
   # common paths for cursor themes, fonts, etc.
