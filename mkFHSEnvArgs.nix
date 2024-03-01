@@ -217,7 +217,7 @@ assert lib.assertMsg (dieWithParent -> unsharePid) "dieWithParent requires unsha
     "\"$\{wayland_binds[@]\}\""
     "\"$\{pipewire_binds[@]\}\""
   ]
-  ++ (lib.optional privateTmp "--bind /tmp/app/${appId} /tmp")
+  ++ (lib.optional privateTmp ''--bind "/tmp/app/${appId}" "/tmp"'')
   ++ mountSandboxPaths
   ++ runtimeDirBindsArgs
   # common paths for cursor themes, fonts, etc.
