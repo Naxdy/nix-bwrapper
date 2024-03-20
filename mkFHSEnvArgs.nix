@@ -72,7 +72,8 @@ let
 
   runtimeDirBindsArgs = map (e: "--ro-bind-try \"$XDG_RUNTIME_DIR/${e}\" \"$XDG_RUNTIME_DIR/${e}\"") runtimeDirBinds;
 
-  appId = if forceAppId != null then forceAppId else "nix.bwrapper.${builtins.replaceStrings [ "-" ] [ "_" ] pkg.pname}";
+  appId = if forceAppId != null then forceAppId else
+  (builtins.trace "warning: You didn't specify an appId for ${pkg.pname}. While this is not a big deal, it may cause certain features (e.g. KDE Plasma's volume button in the task manager) to not function correctly. If you rely on these features, it is recommended to use the correct appId via `forceAppId`." "nix.bwrapper.${builtins.replaceStrings [ "-" ] [ "_" ] pkg.pname}");
 
   mkSandboxPaths = builtins.concatStringsSep "\n" (map
     (e:
@@ -137,7 +138,8 @@ assert lib.assertMsg (dieWithParent -> unsharePid) "dieWithParent requires unsha
     test -d "$HOME/.bwrapper/${pkg.pname}/config" || mkdir -p "$HOME/.bwrapper/${pkg.pname}/config"
     test -d "$HOME/.bwrapper/${pkg.pname}/local" || mkdir -p "$HOME/.bwrapper/${pkg.pname}/local"
     test -d "$HOME/.bwrapper/${pkg.pname}/cache" || mkdir -p "$HOME/.bwrapper/${pkg.pname}/cache"
-    test -f "$HOME/.bwrapper/${pkg.pname}/.flatpak-info" || printf "[Application]\nname=${appId}\n" > "$HOME/.bwrapper/${pkg.pname}/.flatpak-info"
+    test -f "$HOME/.bwrapper/${pkg.pname}/.flatpak-info" && rm "$HOME/.bwrapper/${pkg.pname}/.flatpak-info"
+    printf "[Application]\nname=${appId}\n" > "$HOME/.bwrapper/${pkg.pname}/.flatpak-info"
     ${mkSandboxPaths}
 
     ${lib.optionalString privateTmp ''test -d /tmp/app/${appId} || mkdir -p /tmp/app/${appId}''}
