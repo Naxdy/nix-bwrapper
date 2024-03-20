@@ -61,7 +61,7 @@ let
   name = pname + versionStr;
 
 in
-builtins.trace "WARNING: bwrapperFHSEnv (used for ${pname}) is still experimental!" (fhsEnvArgs.buildFHSEnv (args // (builtins.removeAttrs fhsEnvArgs [ "buildFHSEnv" ]) // {
+(fhsEnvArgs.buildFHSEnv (args // (builtins.removeAttrs fhsEnvArgs [ "buildFHSEnv" ]) // {
   inherit name;
 
   version = null;
