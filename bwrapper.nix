@@ -1,6 +1,7 @@
 { nixpkgs, runCommandLocal, callPackage, lib, xdg-dbus-proxy, bubblewrap, coreutils }:
 { pkg
 , forceAppId ? null
+, renameDesktopFile ? true
 , dbusLogging ? false
 , runScript
 , appendBwrapArgs ? [ ]

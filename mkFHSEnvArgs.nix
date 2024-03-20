@@ -2,6 +2,7 @@
 { pkg
 , dbusLogging ? false
 , forceAppId ? null
+, renameDesktopFile ? true
 , runScript
 , appendBwrapArgs ? [ ]
 , additionalFolderPaths ? [ ]
@@ -72,8 +73,7 @@ let
 
   runtimeDirBindsArgs = map (e: "--ro-bind-try \"$XDG_RUNTIME_DIR/${e}\" \"$XDG_RUNTIME_DIR/${e}\"") runtimeDirBinds;
 
-  appId = if forceAppId != null then forceAppId else
-  (builtins.trace "warning: You didn't specify an appId for ${pkg.pname}. While this is not a big deal, it may cause certain features (e.g. KDE Plasma's volume button in the task manager) to not function correctly. If you rely on these features, it is recommended to use the correct appId via `forceAppId`." "nix.bwrapper.${builtins.replaceStrings [ "-" ] [ "_" ] pkg.pname}");
+  appId = if forceAppId != null then forceAppId else "nix.bwrapper.${builtins.replaceStrings [ "-" ] [ "_" ] pkg.pname}";
 
   mkSandboxPaths = builtins.concatStringsSep "\n" (map
     (e:
@@ -108,7 +108,7 @@ let
     { };
 in
 assert lib.assertMsg (dieWithParent -> unsharePid) "dieWithParent requires unsharePid to be true.";
-
+assert lib.assertMsg ((! renameDesktopFile) -> (forceAppId != null)) "If you don't want to automatically rename the desktop file, you must specify an appId.";
 {
   inherit buildFHSEnv;
   inherit runScript unshareIpc unshareUser unshareUts unshareCgroup unsharePid unshareNet privateTmp;
@@ -117,18 +117,23 @@ assert lib.assertMsg (dieWithParent -> unsharePid) "dieWithParent requires unsha
 
   targetPkgs = pkgs: ((pkg.buildInputs or [ ]) ++ [ pkg ] ++ addPkgs);
 
-  extraInstallCommands = (lib.optionalString (! skipExtraInstallCmds) ''
+  extraInstallCommands = lib.optionalString (! skipExtraInstallCmds) (''
+    # some fhsenv packages add these by default, but we want our own
+    rm -rf $out/share/{applications,icons,pixmaps}
+
     mkdir -p $out/share/{applications,icons,pixmaps}
 
-    test -d ${pkg}/share/applications && ln -s ${pkg}/share/applications/* $out/share/applications
     test -d ${pkg}/share/icons && ln -s ${pkg}/share/icons/* $out/share/icons
     test -d ${pkg}/share/pixmaps && ln -s ${pkg}/share/pixmaps/* $out/share/pixmaps
+  '' + (if renameDesktopFile then ''
+    test $(ls ${pkg}/share/applications/*.desktop | wc -l) -eq 1 || (echo "You have chosen to automatically rename ${pkg.pname}'s desktop file, but there is more than 1. You will have to manually specify the appId using `forceAppId` instead." && exit 1)
 
-    # this is needed for exit code 0
-    true
+    cp ${pkg}/share/applications/*.desktop $out/share/applications/${appId}.desktop
+  '' else ''
+    test -d ${pkg}/share/applications && cp ${pkg}/share/applications/* $out/share/applications
   '') + (lib.optionalString overwriteExec ''
     sed -i "s|^Exec=.*|Exec=$out/bin/${runScript} ${execArgs}|" $out/share/applications/*.desktop
-  '');
+  ''));
 
   extraPreBwrapCmds = ''
     trap 'trap - SIGTERM && kill -- -$$' SIGINT SIGTERM EXIT

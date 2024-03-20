@@ -2,6 +2,7 @@
 { pkg-unwrapped ? null
 , dbusLogging ? false
 , forceAppId ? null
+, renameDesktopFile ? true
 , appendBwrapArgs ? [ ]
 , additionalFolderPaths ? [ ]
 , additionalFolderPathsReadWrite ? [ ]
