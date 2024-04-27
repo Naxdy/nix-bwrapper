@@ -65,9 +65,6 @@ in
 (fhsEnvArgs.buildFHSEnv (args // (builtins.removeAttrs fhsEnvArgs [ "buildFHSEnv" ]) // {
   inherit name;
 
-  version = null;
-  pname = null;
-
   targetPkgs = pkgs: ((fhsEnvArgs.targetPkgs pkgs) ++ (args.targetPkgs pkgs));
 
   extraInstallCommands = (args.extraInstallCommands or "") + fhsEnvArgs.extraInstallCommands;
