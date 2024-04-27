@@ -113,8 +113,6 @@ assert lib.assertMsg ((! renameDesktopFile) -> (forceAppId != null)) "If you don
   inherit buildFHSEnv;
   inherit runScript unshareIpc unshareUser unshareUts unshareCgroup unsharePid unshareNet privateTmp;
 
-  name = null;
-
   targetPkgs = pkgs: ((pkg.buildInputs or [ ]) ++ [ pkg ] ++ addPkgs);
 
   extraInstallCommands = lib.optionalString (! skipExtraInstallCmds) (''
