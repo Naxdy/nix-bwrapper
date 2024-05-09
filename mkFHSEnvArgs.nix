@@ -84,7 +84,7 @@ let
       assert lib.assertMsg (e.name != "local") reservedMsg;
       assert lib.assertMsg (e.name != "cache") reservedMsg;
       assert lib.assertMsg (e.name != ".flatpak-info") reservedMsg;
-      ''test -d "$HOME/.bwrapper/${pkg.pname}/${e.name} || mkdir -p "$HOME/.bwrapper/${pkg.pname}/${e.name}"'')
+      ''test -d "$HOME/.bwrapper/${pkg.pname}/${e.name}" || mkdir -p "$HOME/.bwrapper/${pkg.pname}/${e.name}"'')
     additionalSandboxPaths);
 
   mountSandboxPaths = map (e: ''--bind "$HOME/.bwrapper/${pkg.pname}/${e.name}" "${e.path}"'') additionalSandboxPaths;
