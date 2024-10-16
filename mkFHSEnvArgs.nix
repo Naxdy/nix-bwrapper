@@ -89,23 +89,7 @@ let
 
   mountSandboxPaths = map (e: ''--bind "$HOME/.bwrapper/${pkg.pname}/${e.name}" "${e.path}"'') additionalSandboxPaths;
 
-  # we don't want to `exec` the final file, to avoid zombie processes
-  buildFHSEnvPatched = builtins.replaceStrings
-    [ "exec " "./buildFHSEnv.nix" ]
-    [ "" "${nixpkgs}/pkgs/build-support/build-fhsenv-bubblewrap/buildFHSEnv.nix" ]
-    (builtins.readFile "${nixpkgs}/pkgs/build-support/build-fhsenv-bubblewrap/default.nix");
-
-  patchedPkg = runCommandLocal "build-fhsenv-bubblewrap-patched"
-    {
-      inherit buildFHSEnvPatched;
-    } ''
-    echo "$buildFHSEnvPatched" > $out
-    chmod +x $out
-  '';
-
-  buildFHSEnv = callPackage
-    "${patchedPkg}"
-    { };
+  buildFHSEnv = callPackage ./build-fhsenv-bubblewrap { inherit nixpkgs; };
 in
 assert lib.assertMsg (dieWithParent -> unsharePid) "dieWithParent requires unsharePid to be true.";
 assert lib.assertMsg ((! renameDesktopFile) -> (forceAppId != null)) "If you don't want to automatically rename the desktop file, you must specify an appId.";
