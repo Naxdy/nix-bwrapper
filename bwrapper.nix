@@ -31,6 +31,7 @@
   unshareNet ? false,
   dieWithParent ? true,
   privateTmp ? true,
+  sensibleDefaults ? true,
 }@args:
 let
   mkFHSEnvArgs = callPackage ./mkFHSEnvArgs.nix { inherit nixpkgs; };

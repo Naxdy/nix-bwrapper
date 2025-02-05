@@ -32,6 +32,7 @@
   dieWithParent ? true,
   privateTmp ? true,
   skipExtraInstallCmds ? false,
+  sensibleDefaults ? true,
 }:
 let
   standardDbusTalks = [
@@ -71,19 +72,23 @@ let
 
   dbusArgs =
     (lib.concatMapStrings (e: "    --talk=\"${e}\" \\\n") (
-      lib.lists.unique (dbusTalks ++ standardDbusTalks)
+      lib.lists.unique (dbusTalks ++ (lib.optionals sensibleDefaults standardDbusTalks))
     ))
     + (lib.concatMapStrings (e: "    --own=\"${e}\" \\\n") dbusOwns)
-    + (lib.concatMapStrings (e: "    --call=\"${e}\" \\\n") dbusCalls)
-    + (lib.concatMapStrings (e: "    --broadcast=\"${e}\" ") dbusBroadcasts);
+    + (lib.optionalString sensibleDefaults (
+      lib.concatMapStrings (e: "    --call=\"${e}\" \\\n") dbusCalls
+    ))
+    + (lib.optionalString sensibleDefaults (
+      lib.concatMapStrings (e: "    --broadcast=\"${e}\" ") dbusBroadcasts
+    ));
 
   systemDbusArgs = (
     lib.concatMapStrings (e: "--talk=${e} ") (
-      lib.lists.unique (systemDbusTalks ++ standardSystemDbusTalks)
+      lib.lists.unique (systemDbusTalks ++ (lib.optionals sensibleDefaults standardSystemDbusTalks))
     )
   );
 
-  runtimeDirBinds = [
+  runtimeDirBinds = lib.optionals sensibleDefaults [
     "pulse"
   ];
 
@@ -132,6 +137,7 @@ assert lib.assertMsg (
     unsharePid
     unshareNet
     privateTmp
+    sensibleDefaults
     ;
 
   targetPkgs = pkgs: ((pkg.buildInputs or [ ]) ++ [ pkg ] ++ addPkgs);
@@ -206,28 +212,30 @@ assert lib.assertMsg (
       set_up_system_dbus_proxy &
       ${coreutils}/bin/sleep 0.1
 
-      # there shouldn't be more than 1 xauth file, but best to be safe
-      declare -a x11_auth_binds
-      xauth_files=$(ls "$XDG_RUNTIME_DIR/xauth_"*)
+      ${lib.optionalString sensibleDefaults ''
+        # there shouldn't be more than 1 xauth file, but best to be safe
+        declare -a x11_auth_binds
+        xauth_files=$(ls "$XDG_RUNTIME_DIR/xauth_"*)
 
-      for file in $xauth_files; do
-        x11_auth_binds+=(--ro-bind "$file" "$file")
-      done
+        for file in $xauth_files; do
+          x11_auth_binds+=(--ro-bind "$file" "$file")
+        done
 
-      # there also shouldn't be more than 1 of these sockets in theory, but best to be safe
-      declare -a wayland_binds
-      wayland_sockets=$(ls "$XDG_RUNTIME_DIR/wayland-"*)
+        # there also shouldn't be more than 1 of these sockets in theory, but best to be safe
+        declare -a wayland_binds
+        wayland_sockets=$(ls "$XDG_RUNTIME_DIR/wayland-"*)
 
-      for file in $wayland_sockets; do
-        wayland_binds+=(--ro-bind "$file" "$file")
-      done
+        for file in $wayland_sockets; do
+          wayland_binds+=(--ro-bind "$file" "$file")
+        done
 
-      declare -a pipewire_binds
-      pipewire_sockets=$(ls "$XDG_RUNTIME_DIR/pipewire-"*)
+        declare -a pipewire_binds
+        pipewire_sockets=$(ls "$XDG_RUNTIME_DIR/pipewire-"*)
 
-      for file in $pipewire_sockets; do
-        pipewire_binds+=(--ro-bind "$file" "$file")
-      done
+        for file in $pipewire_sockets; do
+          pipewire_binds+=(--ro-bind "$file" "$file")
+        done
+      ''}
     ''
     + (builtins.concatStringsSep "\n" (
       map (e: "test -d \"${e}\" || mkdir -p \"${e}\"") additionalFolderPathsReadWrite
@@ -253,15 +261,17 @@ assert lib.assertMsg (
       "--setenv DISPLAY \"$DISPLAY\""
       "--setenv NOTIFY_IGNORE_PORTAL 1"
       "--setenv WAYLAND_DISPLAY \"$WAYLAND_DISPLAY\""
+    ]
+    ++ (lib.optionals sensibleDefaults [
       "\"$\{x11_auth_binds[@]\}\""
       "\"$\{wayland_binds[@]\}\""
       "\"$\{pipewire_binds[@]\}\""
-    ]
+    ])
     ++ (lib.optional privateTmp ''--bind "/tmp/app/${appId}" "/tmp"'')
     ++ mountSandboxPaths
     ++ runtimeDirBindsArgs
     # common paths for cursor themes, fonts, etc.
-    ++ (folderPaths [
+    ++ (lib.optionals sensibleDefaults (folderPaths [
       "$HOME/.icons"
       "$HOME/.fonts"
       "$HOME/.themes"
@@ -270,7 +280,7 @@ assert lib.assertMsg (
       "$HOME/.config/gtk-2.0"
       "$HOME/.config/Kvantum"
       "$HOME/.config/gtkrc-2.0"
-    ])
+    ]))
     ++ (folderPaths additionalFolderPaths)
     ++ (folderPathsReadWrite additionalFolderPathsReadWrite)
     ++ appendBwrapArgs

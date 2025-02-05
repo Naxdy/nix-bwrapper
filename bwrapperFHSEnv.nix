@@ -32,6 +32,7 @@
   dieWithParent ? true,
   privateTmp ? true,
   skipExtraInstallCmds ? true,
+  sensibleDefaults ? true,
 }@bwrapperArgs:
 {
   name ? null,

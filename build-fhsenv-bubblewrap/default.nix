@@ -27,6 +27,7 @@
   unshareCgroup ? false,
   privateTmp ? false,
   dieWithParent ? true,
+  sensibleDefaults ? true,
   ...
 }@args:
 
@@ -231,16 +232,18 @@ let
       # Rationale: https://github.com/flatpak/flatpak/blob/be2de97e862e5ca223da40a895e54e7bf24dbfb9/common/flatpak-run.c#L277
       x11_args+=(--tmpfs /tmp/.X11-unix)
 
-      # Try to guess X socket path. This doesn't cover _everything_, but it covers some things.
-      if [[ "$DISPLAY" == *:* ]]; then
-        # recover display number from $DISPLAY formatted [host]:num[.screen]
-        display_nr=''${DISPLAY/#*:} # strip host
-        display_nr=''${display_nr/%.*} # strip screen
-        local_socket=/tmp/.X11-unix/X$display_nr
-        x11_args+=(--ro-bind-try "$local_socket" "$local_socket")
-      fi
+      ${optionalString sensibleDefaults ''
+        Try to guess X socket path. This doesn't cover _everything_, but it covers some things.
+        if [[ "$DISPLAY" == *:* ]]; then
+          # recover display number from $DISPLAY formatted [host]:num[.screen]
+          display_nr=''${DISPLAY/#*:} # strip host
+          display_nr=''${display_nr/%.*} # strip screen
+          local_socket=/tmp/.X11-unix/X$display_nr
+          x11_args+=(--ro-bind-try "$local_socket" "$local_socket")
+        fi
+      ''}
 
-      ${optionalString privateTmp ''
+      ${optionalString (privateTmp && sensibleDefaults) ''
         # sddm places XAUTHORITY in /tmp
         if [[ "$XAUTHORITY" == /tmp/* ]]; then
           x11_args+=(--ro-bind-try "$XAUTHORITY" "$XAUTHORITY")
