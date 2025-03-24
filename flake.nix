@@ -5,95 +5,167 @@
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
     flake-utils.url = "github:numtide/flake-utils";
+
+    nuschtosSearch.url = "github:NuschtOS/search";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    (flake-utils.lib.eachDefaultSystem
-      (system:
-        let
-          pkgs = import nixpkgs {
-            inherit system;
-            overlays = [
-              self.overlays.default
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      nuschtosSearch,
+    }:
+    (flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [
+            self.overlays.default
+          ];
+
+          # needed for the example packages
+          config.allowUnfreePredicate =
+            pkg:
+            builtins.elem (pkgs.lib.getName pkg) [
+              "steam"
+              "steam-unwrapped"
+              "discord"
+              "slack"
             ];
-          };
-        in
-        {
-          packages.brave-wrapped = pkgs.bwrapper {
-            pkg = pkgs.brave;
+        };
+      in
+      {
+        lib = import ./modules { inherit pkgs nixpkgs; };
+
+        packages.optionsDoc = self.lib.${system}.options-json;
+
+        packages.search = nuschtosSearch.packages.${system}.mkSearch {
+          optionsJSON = self.lib.${system}.options-json + "/share/doc/nixos/options.json";
+          urlPrefix = "https://github.com/Naxdy/nix-bwrapper/tree/main/";
+          title = "Nix Bwrapper Options Search";
+          baseHref = "/nix-bwrapper/";
+        };
+
+        packages.brave-wrapped = pkgs.mkBwrapper {
+          app = {
+            package = pkgs.brave;
             runScript = "brave";
           };
+        };
 
-          packages.bottles-wrapped = pkgs.bottles.override {
-            buildFHSEnv = pkgs.bwrapperFHSEnv {
-              unshareIpc = false;
-              systemDbusTalks = [
-                "org.freedesktop.UDisks2"
-              ];
-              dbusOwns = [
-                "com.usebottles.bottles"
-              ];
+        packages.lutris-wrapped = pkgs.mkBwrapper ({
+          app = {
+            package = pkgs.lutris;
+            isFhsenv = true;
+            id = "net.lutris.Lutris";
+            env = {
+              WEBKIT_DISABLE_DMABUF_RENDERER = 1;
+              APPIMAGE_EXTRACT_AND_RUN = 1;
             };
           };
-
-          packages.lutris-wrapped = pkgs.lutris.override {
-            buildFHSEnv = pkgs.bwrapperFHSEnv {
-              unshareIpc = false;
-              skipExtraInstallCmds = false;
-              appendBwrapArgs = [
-                "--setenv WEBKIT_DISABLE_DMABUF_RENDERER 1"
-                "--setenv APPIMAGE_EXTRACT_AND_RUN 1"
-              ];
-              dbusTalks = [
+          fhsenv = {
+            skipExtraInstallCmds = false;
+          };
+          dbus = {
+            logging = true;
+            session = {
+              talks = [
                 "org.freedesktop.Flatpak"
                 "org.kde.StatusNotifierWatcher"
                 "org.kde.KWin"
                 "org.gnome.Mutter.DisplayConfig"
                 "org.freedesktop.ScreenSaver"
               ];
-              systemDbusTalks = [
-                "org.freedesktop.UDisks2"
-              ];
-              dbusOwns = [
+              owns = [
                 "net.lutris.Lutris"
               ];
-              additionalFolderPaths = [
-                "$HOME/.config/kdedefaults"
-                "$HOME/.local/share/color-schemes"
-              ];
-              additionalFolderPathsReadWrite = [
-                "$HOME/.steam"
-                "$HOME/.local/share/steam"
-                "$HOME/.local/share/applications"
-                "$HOME/.local/share/desktop-directories"
-                "$HOME/Games"
-                "$HOME/Documents/My Games"
-                "/mnt/veracrypt1/Games/Lutris"
-                "/mnt/veracrypt1/Games/Steam"
+            };
+            system = {
+              talks = [
+                "org.freedesktop.UDisks2"
               ];
             };
           };
-
-          packages.discord-wrapped = pkgs.bwrapper {
-            pkg = pkgs.discord;
-            runScript = "discord";
-            overwriteExec = true;
-            additionalFolderPathsReadWrite = [
-              "$XDG_RUNTIME_DIR/app/com.discordapp.Discord"
+          mounts = {
+            read = [
+              "$HOME/.config/kdedefaults"
+              "$HOME/.local/share/color-schemes"
             ];
-            dbusOwns = [
-              "com.discordapp.Discord"
+            readWrite = [
+              "$HOME/.steam"
+              "$HOME/.local/share/steam"
+              "$HOME/.local/share/applications"
+              "$HOME/.local/share/desktop-directories"
+              "$HOME/Games"
             ];
           };
-        })) // {
-      overlays.default = final: prev: {
-        bwrapper = final.callPackage ./bwrapper.nix {
-          inherit nixpkgs;
+        });
+
+        packages.bottles-wrapped = pkgs.mkBwrapper {
+          app = {
+            package = pkgs.bottles;
+            # needed because `pkgs.bottles` is a `symlinkJoin`
+            package-unwrapped = pkgs.bottles-unwrapped;
+            isFhsenv = true;
+          };
+          dbus.system.talks = [
+            "org.freedesktop.UDisks2"
+          ];
+          dbus.session.owns = [
+            "com.usebottles.bottles"
+          ];
         };
 
-        bwrapperFHSEnv = final.callPackage ./bwrapperFHSEnv.nix {
-          inherit nixpkgs;
+        packages.slack-wrapped = pkgs.mkBwrapper {
+          app = {
+            package = pkgs.slack;
+            runScript = "slack";
+            execArgs = "-s %U";
+            addPkgs = [
+              pkgs.libdbusmenu # to make global menu work in KDE
+            ];
+          };
+          dbus.system.talks = [
+            "org.freedesktop.UPower"
+            "org.freedesktop.login1"
+          ];
+          dbus.session.talks = [
+            "org.kde.kwalletd6"
+            "org.freedesktop.secrets"
+            "org.kde.kwalletd5"
+          ];
         };
+
+        packages.discord-wrapped = pkgs.mkBwrapper {
+          app = {
+            package = pkgs.discord;
+            runScript = "discord";
+            id = "com.discordapp.Discord";
+          };
+          mounts = {
+            readWrite = [
+              "$XDG_RUNTIME_DIR/app/com.discordapp.Discord"
+            ];
+          };
+          dbus.session.owns = [
+            "com.discordapp.Discord"
+          ];
+        };
+      }
+    ))
+    // {
+      overlays.default = final: prev: {
+        mkBwrapper =
+          (import ./modules {
+            pkgs = final;
+            inherit nixpkgs;
+          }).bwrapper;
+
+        bwrapper = builtins.throw "`bwrapper` has been replaced by a unified module-based system available under `mkBwrapper`";
+
+        bwrapperFHSEnv = builtins.throw "`bwrapperFHSEnv` has been replaced by a unified module-based system available under `mkBwrapper`";
       };
     };
 }
