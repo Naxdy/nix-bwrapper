@@ -1,0 +1,23 @@
+name: Nix Checks
+
+on: ['pull_request']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nix-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Flake Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
+      - name: Run Flake Checks
+        run: |
+          nix flake check
