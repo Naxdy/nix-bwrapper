@@ -67,26 +67,37 @@ let
     );
 
   evalMod =
-    mod:
+    mods:
     pkgs.lib.evalModules {
       modules = [
-        mod
         mainModule
-      ];
+      ] ++ mods;
       specialArgs = {
         inherit nixpkgs pkgs;
         inherit (pkgs) lib;
       };
     };
 
-  modulesForDoc = evalMod ({
-    _module.args.pkgs = lib.mkForce noPkgs;
-  });
+  modulesForDoc = evalMod [
+    {
+      _module.args.pkgs = lib.mkForce noPkgs;
+    }
+  ];
 in
 {
-  bwrapper = mod: (evalMod mod).config.build.package;
+  bwrapper = mod: (evalMod [ mod ]).config.build.package;
 
-  bwrapperFhsEnv = mod: (evalMod mod).config.build.fhsenv;
+  bwrapperFHSEnv =
+    mod:
+    (evalMod [
+      mod
+      {
+        app = {
+          package = null;
+          isFhsenv = true;
+        };
+      }
+    ]).config.build.fhsenv;
 
   options-json =
     (pkgs.nixosOptionsDoc {

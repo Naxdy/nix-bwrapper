@@ -69,7 +69,6 @@
             skipExtraInstallCmds = false;
           };
           dbus = {
-            logging = true;
             session = {
               talks = [
                 "org.freedesktop.Flatpak"
@@ -103,19 +102,20 @@
           };
         });
 
-        packages.bottles-wrapped = pkgs.mkBwrapper {
-          app = {
-            package = pkgs.bottles;
-            # needed because `pkgs.bottles` is a `symlinkJoin`
-            package-unwrapped = pkgs.bottles-unwrapped;
-            isFhsenv = true;
+        packages.bottles-wrapped = pkgs.bottles.override {
+          # need to override it like this because `pkgs.bottles` is a `symlinkJoin`
+          buildFHSEnv = pkgs.mkBwrapperFHSEnv {
+            app = {
+              package-unwrapped = pkgs.bottles-unwrapped;
+              id = "com.usebottles.bottles";
+            };
+            dbus.system.talks = [
+              "org.freedesktop.UDisks2"
+            ];
+            dbus.session.owns = [
+              "com.usebottles.bottles"
+            ];
           };
-          dbus.system.talks = [
-            "org.freedesktop.UDisks2"
-          ];
-          dbus.session.owns = [
-            "com.usebottles.bottles"
-          ];
         };
 
         packages.slack-wrapped = pkgs.mkBwrapper {
@@ -162,6 +162,12 @@
             pkgs = final;
             inherit nixpkgs;
           }).bwrapper;
+
+        mkBwrapperFHSEnv =
+          (import ./modules {
+            pkgs = final;
+            inherit nixpkgs;
+          }).bwrapperFHSEnv;
 
         bwrapper = builtins.throw "`bwrapper` has been replaced by a unified module-based system available under `mkBwrapper`";
 
