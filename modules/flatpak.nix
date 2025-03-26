@@ -1,7 +1,6 @@
 { config, ... }:
 {
   fhsenv.bwrap.additionalArgs = [
-    "--tmpfs \"$XDG_RUNTIME_DIR/.flatpak/0\""
     "--ro-bind \"$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info\" \"/.flatpak-info\""
   ];
 
@@ -10,7 +9,7 @@
   # system. Don't yet know if the values in there should be something sensible, for now just
   # setting everything to `1` seems to work fine.
   script.preCmds.stage1 = ''
-    test -f "$HOME/.bwrapper/${config.app.id}/.flatpak-info" && rm "$HOME/.bwrapper/${config.app.id}/.flatpak-info"
+    test -f "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" && rm "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info"
     printf "[Application]\nname=${config.app.id}\n\n[Instance]\ninstance-id = 0\nsystem-bus-proxy = true\nsession-bus-proxy = true\n" > "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info"
 
     mkdir -p "$XDG_RUNTIME_DIR/.flatpak/0"
