@@ -44,7 +44,7 @@ in
     package = lib.mkOption {
       readOnly = true;
       internal = true;
-      type = lib.types.package;
+      type = lib.types.nullOr lib.types.package;
     };
   };
 

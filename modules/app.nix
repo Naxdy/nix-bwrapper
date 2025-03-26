@@ -47,10 +47,11 @@ in
       description = "Whether to overwrite the `Exec` section in the app's `.desktop` file";
     };
     package = lib.mkOption {
-      type = lib.types.package;
+      type = lib.types.nullOr lib.types.package;
       description = ''
         The main package to be sandboxed. If it is already wrapped using `buildFHSEnv`, make sure
-        to set `config.app.isFhsenv` to `true`.
+        to set `config.app.isFhsenv` to `true`. This can be null in case only the output `config.build.fhsenv`
+        is desired.
       '';
     };
     env = lib.mkOption {
@@ -85,6 +86,7 @@ in
     isFhsenv = lib.mkOption {
       type = lib.types.bool;
       default = false;
+      defaultText = lib.literalExpression "config.app.package-unwrapped != null";
       description = ''
         Whether the package in `config.app.package` is already wrapped in an FHS env
       '';

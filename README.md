@@ -4,29 +4,120 @@ Nix-Bwrapper is a utility aimed at creating a user-friendly method of sandboxing
 
 The `flake.nix` contains a few examples with some commonly used (unfree) applications.
 
-## Usage
+## Getting Started
 
-Import this flake like you would any other. It provides an overlay, which in turn provides the `mkBwrapper` function.
+Import this flake like you would any other. It provides an overlay, which in turn provides the `mkBwrapper` and `mkBwrapperFHSEnv` functions.
 
-`mkBwrapper` takes in a `module` describing the app you want sandboxed, and exactly how you want it to be sandboxed.
-
-Packages that are already using `buildFHSEnv` can also be packaged, by setting the `app.isFhsenv` flag, like so:
+Both functions take in a `module` describing the app you want sandboxed, and exactly how you want it to be sandboxed. Here is a minimal flake that exports a wrapped `discord` package:
 
 ```nix
 {
-  packages.bottles-wrapped = pkgs.mkBwrapper {
-    app = {
-      package = pkgs.bottles;
-      # needed because `pkgs.bottles` is a `symlinkJoin`
-      package-unwrapped = pkgs.bottles-unwrapped;
-      isFhsenv = true;
+  imports = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nix-bwrapper.url = "github:Naxdy/nix-bwrapper";
+  };
+
+  outputs = { self, nixpkgs, nix-bwrapper }:
+  let
+    pkgs = import nixpkgs {
+      system = "x86_64-linux";
+      config.allowUnfree = true; # discord is unfree
+      overlays = [
+        nix-bwrapper.overlays.default # provides `mkBwrapper`
+      ];
     };
-    dbus.system.talks = [
-      "org.freedesktop.UDisks2"
-    ];
-    dbus.session.owns = [
-      "com.usebottles.bottles"
-    ];
+  in {
+    packages.x86_64-linux.discord-wrapped = pkgs.mkBwrapper {
+      app = {
+        package = pkgs.discord;
+        runScript = "discord";
+        id = "com.discordapp.Discord";
+      };
+      mounts = {
+        readWrite = [
+          "$XDG_RUNTIME_DIR/app/com.discordapp.Discord"
+        ];
+      };
+      dbus.session.owns = [
+        "com.discordapp.Discord"
+      ];
+    };
+  };
+}
+```
+
+Packages already using `buildFHSEnv` can also be wrapped, like so:
+
+```nix
+  packages.lutris-wrapped = pkgs.mkBwrapper ({
+    app = {
+      package = pkgs.lutris;
+      isFhsenv = true; # tells bwrapper that the app is already using buildFHSEnv
+      id = "net.lutris.Lutris";
+      env = {
+        WEBKIT_DISABLE_DMABUF_RENDERER = 1;
+        APPIMAGE_EXTRACT_AND_RUN = 1;
+      };
+    };
+    fhsenv = {
+      skipExtraInstallCmds = false;
+    };
+    dbus = {
+      session = {
+        talks = [
+          "org.freedesktop.Flatpak"
+          "org.kde.StatusNotifierWatcher"
+          "org.kde.KWin"
+          "org.gnome.Mutter.DisplayConfig"
+          "org.freedesktop.ScreenSaver"
+        ];
+        owns = [
+          "net.lutris.Lutris"
+        ];
+      };
+      system = {
+        talks = [
+          "org.freedesktop.UDisks2"
+        ];
+      };
+    };
+    mounts = {
+      read = [
+        "$HOME/.config/kdedefaults"
+        "$HOME/.local/share/color-schemes"
+      ];
+      readWrite = [
+        "$HOME/.steam"
+        "$HOME/.local/share/steam"
+        "$HOME/.local/share/applications"
+        "$HOME/.local/share/desktop-directories"
+        "$HOME/Games"
+      ];
+    };
+  });
+```
+
+Packages using `buildFHSEnv` in a custom manner can also be wrapped, by using `mkBwrapperFHSEnv` like so:
+
+```nix
+{
+  packages.bottles-wrapped = pkgs.bottles.override {
+    # Need to override it like this because `pkgs.bottles` is a `symlinkJoin`.
+    # Also, when using `mkBwrapperFHSEnv`, `app.isFhsenv` is implicitly set to `true`, and
+    # it is only necessary to specify `package-unwrapped`, as opposed to `package`, which should
+    # be set to the _unwrapped_ package (the package that is meant to be passed to `buildFHSEnv`)
+    buildFHSEnv = pkgs.mkBwrapperFHSEnv {
+      app = {
+        package-unwrapped = pkgs.bottles-unwrapped;
+        id = "com.usebottles.bottles";
+      };
+      dbus.system.talks = [
+        "org.freedesktop.UDisks2"
+      ];
+      dbus.session.owns = [
+        "com.usebottles.bottles"
+      ];
+    };
   };
 }
 ```
@@ -65,7 +156,7 @@ This behavior can be overridden just like in any other NixOS module, by using `l
 
 Additionally, `bwrapper` will attempt to bind `pulse`, `pipewire` and `wayland` sockets from `$XDG_RUNTIME_DIR`, as well as any `X11` sockets it can find.
 
-This can be disabled by setting the respective `socket` option to `false`:
+This can be disabled by setting the respective `sockets` option to `false`:
 
 ```nix
 {
