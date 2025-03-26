@@ -156,6 +156,10 @@
       }
     ))
     // {
+      nixosModules.default = {
+        nixpkgs.overlays = [ self.overlays.default ];
+      };
+
       overlays.default = final: prev: {
         mkBwrapper =
           (import ./modules {
