@@ -1,7 +1,4 @@
 { config, lib, ... }:
-let
-  cfg = config.runtime;
-in
 {
   options.runtime = {
     binds = lib.mkOption {
