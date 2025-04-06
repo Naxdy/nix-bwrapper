@@ -81,6 +81,11 @@ in
 {
   options.dbus = {
     logging = lib.mkEnableOption "dbus logging (useful for debugging purposes)";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to enable forwarding access to specific DBus interfaces. Note that without this enabled, portal functionality won't work.";
+    };
     session = commonDbusOpts // {
       owns = lib.mkOption {
         type = lib.types.listOf lib.types.str;
@@ -106,6 +111,10 @@ in
   };
 
   config = {
+    warnings =
+      lib.optional (cfg.enable && !config.flatpak.enable)
+        "${config.app.id} has DBus forwarding enabled, but not flatpak emulation. Portal functionality will not work without both.";
+
     # Defaults declared here so they merge with user options by default instead of getting overwritten
     dbus.session.talks = [
       "org.freedesktop.Notifications"

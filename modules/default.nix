@@ -15,6 +15,7 @@ let
         ./app.nix
         ./build.nix
         ./fhsenv.nix
+        ./misc.nix
       ];
     };
 
