@@ -25,7 +25,7 @@ in
       };
     };
     extraInstallCmds = lib.mkOption {
-      type = lib.types.str;
+      type = lib.types.lines;
       default = "";
       internal = true;
     };
