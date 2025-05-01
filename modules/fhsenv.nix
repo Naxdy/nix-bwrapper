@@ -25,9 +25,19 @@ in
       };
     };
     extraInstallCmds = lib.mkOption {
-      type = lib.types.str;
+      type = lib.types.lines;
       default = "";
-      internal = true;
+      example = ''
+        mv $out/bin/''${config.app.runScript} $out/bin/myCustomAppName
+      '';
+      description = ''
+        Extra install commands to be passed to `buildFHSEnv`. If `config.fhsenv.skipExtraInstallCmds`
+        is `false`, this will copy over any application icons and desktop files. Note that whatever you
+        set this value to, it will be merged with the default, unless you set `config.fhsenv.skipExtraInstallCmds = true`.
+
+        You should not need to modify this, unless you need some custom logic, e.g. renaming the final
+        executable file name.
+      '';
     };
     skipExtraInstallCmds = lib.mkOption {
       type = lib.types.bool;
