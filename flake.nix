@@ -207,9 +207,15 @@
       };
 
       checks = forEachSupportedSystem (
-        { treefmtEval, ... }:
+        { pkgs, treefmtEval, ... }:
         {
           formatting = treefmtEval.config.build.check self;
+
+          # note that `pkgs` already includes the overlay we need
+
+          hello-bwrapper = import ./tests/hello.nix {
+            inherit pkgs;
+          };
         }
       );
     };

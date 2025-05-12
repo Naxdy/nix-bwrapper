@@ -20,4 +20,4 @@ jobs:
       - uses: cachix/install-nix-action@v27
       - name: Run Flake Checks
         run: |
-          nix flake check
+          nix flake check -j auto --print-build-logs
