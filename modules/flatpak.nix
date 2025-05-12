@@ -29,6 +29,7 @@ in
     # setting everything to `1` seems to work fine.
     script.preCmds.stage1 = ''
       test -f "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" && rm "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info"
+      mkdir -p "$HOME/.bwrapper/${config.app.bwrapPath}"
       printf "[Application]\nname=${config.app.id}\n\n[Instance]\ninstance-id = 0\nsystem-bus-proxy = true\nsession-bus-proxy = true\n" > "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info"
 
       mkdir -p "$XDG_RUNTIME_DIR/.flatpak/0"
