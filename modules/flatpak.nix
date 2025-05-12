@@ -29,11 +29,11 @@ in
     # setting everything to `1` seems to work fine.
     script.preCmds.stage1 = ''
       test -f "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" && rm "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info"
-      mkdir -p "$HOME/.bwrapper/${config.app.bwrapPath}"
-      printf "[Application]\nname=${config.app.id}\n\n[Instance]\ninstance-id = 0\nsystem-bus-proxy = true\nsession-bus-proxy = true\n" > "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info"
+      mkdir -p "$HOME/.bwrapper/${config.app.bwrapPath}" || { echo 'could not ensure directory under $HOME/.bwrapper'; exit 1; }
+      printf "[Application]\nname=${config.app.id}\n\n[Instance]\ninstance-id = 0\nsystem-bus-proxy = true\nsession-bus-proxy = true\n" > "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" || { echo 'could not write .flatpak-info'; exit 1; }
 
-      mkdir -p "$XDG_RUNTIME_DIR/.flatpak/0"
-      printf '{"child-pid": 1, "mnt-namespace": 1, "net-namespace": 1, "pid-namespace": 1}' > "$XDG_RUNTIME_DIR/.flatpak/0/bwrapinfo.json"
+      mkdir -p "$XDG_RUNTIME_DIR/.flatpak/0" || { echo 'could not ensure fake flatpak directory'; exit 1; }
+      printf '{"child-pid": 1, "mnt-namespace": 1, "net-namespace": 1, "pid-namespace": 1}' > "$XDG_RUNTIME_DIR/.flatpak/0/bwrapinfo.json" || { echo 'could not write fake bwrapinfo.json'; exit 1; }
     '';
   };
 }
