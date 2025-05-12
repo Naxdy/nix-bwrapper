@@ -48,7 +48,7 @@ let
   '';
 
   dbusBroadcastDesc = ''
-    A list of methods that may be subcribed to from the sandbox.
+    A list of methods that may be subscribed to from the sandbox.
 
     Must be of the form [METHOD][@PATH], where METHOD can be either '*' or a D-Bus interface,
     possible with a '.*' suffix, or a fully-qualified method name, and PATH is a D-Bus object path,

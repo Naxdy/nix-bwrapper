@@ -5,6 +5,8 @@
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
     nuschtosSearch.url = "github:NuschtOS/search";
+
+    treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
   outputs =
@@ -12,6 +14,7 @@
       self,
       nixpkgs,
       nuschtosSearch,
+      treefmt-nix,
     }:
     let
       supportedSystems = [
@@ -43,12 +46,27 @@
                   "slack"
                 ];
             };
+
+            treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
           in
-          f { inherit pkgs system; }
+          f { inherit pkgs system treefmtEval; }
         );
     in
     {
       lib = forEachSupportedSystem ({ pkgs, ... }: import ./modules { inherit pkgs nixpkgs; });
+
+      formatter = forEachSupportedSystem ({ treefmtEval, ... }: treefmtEval.config.build.wrapper);
+
+      devShells = forEachSupportedSystem (
+        { pkgs, treefmtEval, ... }:
+        {
+          default = pkgs.mkShell {
+            nativeBuildInputs = [
+              treefmtEval.config.build.wrapper
+            ];
+          };
+        }
+      );
 
       packages = forEachSupportedSystem (
         { pkgs, system, ... }:
@@ -187,5 +205,12 @@
 
         bwrapperFHSEnv = builtins.throw "`bwrapperFHSEnv` has been replaced by a unified module-based system available under `mkBwrapper`";
       };
+
+      checks = forEachSupportedSystem (
+        { treefmtEval, ... }:
+        {
+          formatting = treefmtEval.config.build.check self;
+        }
+      );
     };
 }
