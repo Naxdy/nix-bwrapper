@@ -34,6 +34,7 @@ in
 
   config = {
     script.preCmds.combined = ''
+      set -e
       trap 'trap - SIGTERM && kill -- -$$' SIGINT SIGTERM EXIT
 
       # Stage 1
