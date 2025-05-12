@@ -216,6 +216,10 @@
           hello-bwrapper = import ./tests/hello.nix {
             inherit pkgs;
           };
+
+          graphical-bwrapper = import ./tests/graphical.nix {
+            inherit pkgs nixpkgs;
+          };
         }
       );
     };
