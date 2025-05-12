@@ -48,7 +48,7 @@ let
   '';
 
   dbusBroadcastDesc = ''
-    A list of methods that may be subcribed to from the sandbox.
+    A list of methods that may be subscribed to from the sandbox.
 
     Must be of the form [METHOD][@PATH], where METHOD can be either '*' or a D-Bus interface,
     possible with a '.*' suffix, or a fully-qualified method name, and PATH is a D-Bus object path,
@@ -110,7 +110,7 @@ in
     };
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
     warnings =
       lib.optional (cfg.enable && !config.flatpak.enable)
         "${config.app.id} has DBus forwarding enabled, but not flatpak emulation. Portal functionality will not work without both.";
@@ -161,7 +161,7 @@ in
           --new-session \
           --ro-bind /nix /nix \
           --bind "/run" "/run" \
-          --ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info" \
+          ${lib.optionalString config.flatpak.enable ''--ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info" \''}
           --die-with-parent \
           --clearenv \
           -- \
@@ -173,7 +173,7 @@ in
           --new-session \
           --ro-bind /nix /nix \
           --bind "/run" "/run" \
-          --ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info" \
+          ${lib.optionalString config.flatpak.enable ''--ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info" \''}
           --die-with-parent \
           --clearenv \
           -- \

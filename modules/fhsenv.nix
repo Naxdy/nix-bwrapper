@@ -135,8 +135,8 @@ in
           "--tmpfs /run"
           "--ro-bind /run/current-system /run/current-system"
           "--ro-bind /run/booted-system /run/booted-system"
-          "--ro-bind /run/opengl-driver /run/opengl-driver"
-          "--ro-bind /run/opengl-driver-32 /run/opengl-driver-32"
+          "--ro-bind-try /run/opengl-driver /run/opengl-driver"
+          "--ro-bind-try /run/opengl-driver-32 /run/opengl-driver-32"
           "--bind \"$XDG_RUNTIME_DIR/doc/by-app/${config.app.id}\" \"$XDG_RUNTIME_DIR/doc\""
         ]
         ++ (lib.unique (
