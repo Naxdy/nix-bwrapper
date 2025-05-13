@@ -55,6 +55,7 @@ in
 
       fhsenv.bwrap.additionalArgs = [
         "\"$\{x11_auth_binds[@]\}\""
+        "--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix"
       ];
     })
     (lib.mkIf cfg.wayland {
