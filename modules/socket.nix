@@ -41,7 +41,7 @@ in
         # there shouldn't be more than 1 xauth file, but best to be safe
         declare -a x11_auth_binds
         shopt -s nullglob
-        xauth_files=("$XDG_RUNTIME_DIR/xauth_"* "$XDG_RUNTIME_DIR"/.*Xwaylandauth* "$HOME/.Xauthority")
+        xauth_files=("$XDG_RUNTIME_DIR/xauth_"* "$XDG_RUNTIME_DIR"/.*Xwaylandauth* "$HOME"/.*Xauthority*)
         shopt -u nullglob
 
         for file in $xauth_files; do
