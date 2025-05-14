@@ -129,7 +129,9 @@ See the `flake.nix` for some other examples.
 
 ### Options
 
-> [!NOTE] A comprehensive interactive option search is available at https://naxdy.github.io/nix-bwrapper
+> [!NOTE]
+>
+> A comprehensive interactive option search is available at https://naxdy.github.io/nix-bwrapper
 
 `bwrapper` is preconfigured in such a way that it should integrate with your DE and your theming, and as such includes a
 number of read-only mounts for some of your home directories (e.g. `~/.fonts`, `~/.icons`, etc.).
@@ -292,4 +294,6 @@ a terminal (to see the logs it outputs). Use it as you would normally, if you no
 
 As you might be able to tell, there's a lot of trial and error involved if you go down this route.
 
-> [!TIP] Set `dbus.logging = true` to see which DBus interfaces the application attempts to access.
+> [!TIP]
+>
+> Set `dbus.logging = true` to see which DBus interfaces the application attempts to access.
