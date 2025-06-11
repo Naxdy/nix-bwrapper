@@ -161,7 +161,7 @@ in
           --new-session \
           --ro-bind /nix /nix \
           --bind "/run" "/run" \
-          ${lib.optionalString config.flatpak.enable ''--ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info" \''}
+          ${lib.optionalString config.flatpak.enable ''--ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info"''} \
           --die-with-parent \
           --clearenv \
           -- \
@@ -173,7 +173,7 @@ in
           --new-session \
           --ro-bind /nix /nix \
           --bind "/run" "/run" \
-          ${lib.optionalString config.flatpak.enable ''--ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info" \''}
+          ${lib.optionalString config.flatpak.enable ''--ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info"''} \
           --die-with-parent \
           --clearenv \
           -- \
