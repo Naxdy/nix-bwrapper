@@ -159,7 +159,7 @@ in
       set_up_dbus_proxy() {
         ${pkgs.bubblewrap}/bin/bwrap \
           --new-session \
-          --ro-bind /nix /nix \
+          --ro-bind /nix/store /nix/store \
           --bind "/run" "/run" \
           ${lib.optionalString config.flatpak.enable ''--ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info"''} \
           --die-with-parent \
@@ -171,7 +171,7 @@ in
       set_up_system_dbus_proxy() {
         ${pkgs.bubblewrap}/bin/bwrap \
           --new-session \
-          --ro-bind /nix /nix \
+          --ro-bind /nix/store /nix/store \
           --bind "/run" "/run" \
           ${lib.optionalString config.flatpak.enable ''--ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info"''} \
           --die-with-parent \
