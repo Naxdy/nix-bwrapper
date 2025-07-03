@@ -38,6 +38,17 @@ in
     })
     (lib.mkIf cfg.x11 {
       script.preCmds.stage3 = ''
+        declare -a x11_socket_binds
+
+        # Try to guess X socket path. This doesn't cover _everything_, but it covers some things.
+        if [[ "$DISPLAY" == *:* ]]; then
+          # recover display number from $DISPLAY formatted [host]:num[.screen]
+          display_nr=''${DISPLAY/#*:} # strip host
+          display_nr=''${display_nr/%.*} # strip screen
+          local_socket=/tmp/.X11-unix/X$display_nr
+          x11_socket_binds+=(--ro-bind-try "$local_socket" "$local_socket")
+        fi
+
         # there shouldn't be more than 1 xauth file, but best to be safe
         declare -a x11_auth_binds
         shopt -s nullglob
@@ -54,8 +65,8 @@ in
       };
 
       fhsenv.bwrap.additionalArgs = [
+        "\"$\{x11_socket_binds[@]\}\""
         "\"$\{x11_auth_binds[@]\}\""
-        "--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix"
       ];
     })
     (lib.mkIf cfg.wayland {
