@@ -25,21 +25,30 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
       - uses: cachix/install-nix-action@v27
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: cachix/cachix-action@v14
+        with:
+          name: naxdy-foss
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
       - name: Build Options Search
         run: |
           nix build .#search
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: './result/'
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
 
 
