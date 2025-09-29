@@ -3,12 +3,14 @@ let
   cfg = config.sockets;
 in
 {
+  imports = [
+    (lib.mkRemovedOptionModule [ "sockets" "x11" ] ''
+      The X11 socket option has been removed due to its ability for sandbox escape.
+      A new implementation using `xwayland-satellite` is underway.
+      For more information, see https://github.com/Naxdy/nix-bwrapper/pull/16'')
+  ];
+
   options.sockets = {
-    x11 = lib.mkOption {
-      description = "Whether to bind an X11 socket within the sandbox";
-      default = true;
-      type = lib.types.bool;
-    };
     wayland = lib.mkOption {
       description = "Whether to bind a Wayland socket within the sandbox";
       default = true;
@@ -34,28 +36,6 @@ in
 
       fhsenv.bwrap.additionalArgs = [
         ''--ro-bind-try "$XDG_RUNTIME_DIR/pulse" "$XDG_RUNTIME_DIR/pulse"''
-      ];
-    })
-    (lib.mkIf cfg.x11 {
-      script.preCmds.stage3 = ''
-        # there shouldn't be more than 1 xauth file, but best to be safe
-        declare -a x11_auth_binds
-        shopt -s nullglob
-        xauth_files=("$XDG_RUNTIME_DIR/xauth_"* "$XDG_RUNTIME_DIR"/.*Xwaylandauth* "$HOME"/.*Xauthority*)
-        shopt -u nullglob
-
-        for file in $xauth_files; do
-          x11_auth_binds+=(--ro-bind "$file" "$file")
-        done
-      '';
-
-      app.env = {
-        DISPLAY = "$DISPLAY";
-      };
-
-      fhsenv.bwrap.additionalArgs = [
-        "\"$\{x11_auth_binds[@]\}\""
-        "--ro-bind-try /tmp/.X11-unix /tmp/.X11-unix"
       ];
     })
     (lib.mkIf cfg.wayland {

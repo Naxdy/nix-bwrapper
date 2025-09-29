@@ -72,7 +72,8 @@ let
     pkgs.lib.evalModules {
       modules = [
         mainModule
-      ] ++ mods;
+      ]
+      ++ mods;
       specialArgs = {
         inherit nixpkgs pkgs;
         inherit (pkgs) lib;

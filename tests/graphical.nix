@@ -1,4 +1,35 @@
+# TODO: unfortunately, in this setup we have problems
+# with ambient capabilities, causing bwrap to fail to run :(
 { pkgs, nixpkgs, ... }:
+let
+  konsole-wrapped = pkgs.mkBwrapper {
+    app = {
+      package = pkgs.kdePackages.konsole;
+      runScript = "konsole";
+    };
+
+    fhsenv.opts = {
+      unshareUser = false;
+      unshareIpc = false;
+    };
+
+    fhsenv.skipExtraInstallCmds = true;
+    flatpak.enable = false;
+    dbus.enable = false;
+
+    mounts.readWrite = [
+      "/home/alice/Shared"
+    ];
+
+    sockets = {
+      wayland = true;
+
+      # we have no audio in the VM
+      pipewire = false;
+      pulseaudio = false;
+    };
+  };
+in
 pkgs.testers.runNixOSTest {
   name = "nix-bwrapper-graphical";
 
@@ -9,84 +40,54 @@ pkgs.testers.runNixOSTest {
       { config, pkgs, ... }:
       {
         imports = [
-          "${nixpkgs}/nixos/tests/common/x11.nix"
-          "${nixpkgs}/nixos/tests/common/user-account.nix"
+          "${nixpkgs}/nixos/tests/common/wayland-cage.nix"
         ];
 
-        environment.variables."XAUTHORITY" = "/home/alice/.Xauthority";
+        systemd.services.prepareDirs = {
+          wantedBy = [ "multi-user.target" ];
+          script = ''
+            mkdir -p /home/alice/{Secret,Shared}
+            chown -R alice /home/alice
+          '';
+        };
 
-        environment.variables."XDG_RUNTIME_DIR" = "/run/user/1000";
-
-        test-support.displayManager.auto.user = "alice";
+        environment.variables.DISPLAY = "do not use";
 
         environment.systemPackages = [
           pkgs.gnugrep
-          (pkgs.mkBwrapper {
-            app = {
-              package = pkgs.nedit;
-              runScript = "nedit";
-            };
-
-            fhsenv.skipExtraInstallCmds = true;
-            flatpak.enable = false;
-            dbus.enable = false;
-
-            mounts = {
-              readWrite = [
-                "/home/alice/Shared"
-              ];
-            };
-
-            sockets = {
-              x11 = true;
-
-              # we have no wayland or audio in the VM
-              wayland = false;
-              pipewire = false;
-              pulseaudio = false;
-            };
-          })
+          konsole-wrapped
         ];
       };
   };
 
-  testScript = ''
-    import shlex
+  testScript =
+    # python
+    ''
+      import shlex
 
-    machine.wait_for_unit("default.target")
+      start_all()
+      machine.wait_for_unit("graphical.target")
 
-    machine.wait_for_x()
+      machine.wait_for_text("alice@machine", 10)
+      machine.send_chars("konsole\n", 0.25)
+      machine.wait_for_text("alice@machine", 10)
 
-    # Run as user alice
-    def ru(cmd):
-        return "su - alice -c " + shlex.quote(cmd)
+      # Run as user alice
+      def ru(cmd):
+          return "su - alice -c " + shlex.quote(cmd)
 
-    def launch_editor(arg = ""):
-      machine.succeed(ru(f"nedit {arg} >&2 & disown"))
+      machine.succeed(ru("echo 'secrets touched' > /home/alice/Secret/grass"))
+      machine.succeed(ru("echo 'grass touched' > /home/alice/Shared/grass"))
 
-    machine.succeed(ru("mkdir -p /home/alice/Secret && echo 'grass touched' > /home/alice/Secret/grass"))
-    machine.succeed(ru("mkdir -p /home/alice/Shared && echo 'grass touched' > /home/alice/Shared/grass"))
+      # confirm we can read & write to shared file
+      machine.send_chars("cat ~/Shared/grass\n", 0.25)
+      machine.wait_for_text("grass touched", 10)
+      machine.send_chars("echo hard >> ~/Shared/grass\n", 0.25)
+      machine.succeed(ru("cat /home/alice/Shared/grass | grep hard"))
 
-    launch_editor()
+      # confirm we cannot read secret file
+      machine.send_chars("cat ~/Secret/grass\n", 0.25)
 
-    machine.wait_for_text("Untitled")
-
-    machine.send_key("ctrl-q")
-
-    # confirm we can read & write to shared file
-    launch_editor("/home/alice/Shared/grass")
-
-    machine.wait_for_text("grass touched")
-
-    machine.send_chars(" hard")
-    machine.send_key("ctrl-s")
-    machine.send_key("ctrl-q")
-
-    machine.succeed(ru("cat /home/alice/Shared/grass | grep hard"))
-
-    # confirm we cannot read secret file
-    launch_editor("/home/alice/Secret/grass")
-
-    machine.wait_for_text("unavailable")
-  '';
+      machine.wait_for_text("No such file or directory", 10)
+    '';
 }
