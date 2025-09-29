@@ -98,56 +98,54 @@ in
 
   config = lib.mkMerge [
     (lib.mkIf (!cfg.skipExtraInstallCmds) {
-      fhsenv.extraInstallCmds =
-        ''
-          # some fhsenv packages add these by default, but we want our own
-          rm -rf $out/share/{applications,icons,pixmaps}
+      fhsenv.extraInstallCmds = ''
+        # some fhsenv packages add these by default, but we want our own
+        rm -rf $out/share/{applications,icons,pixmaps}
 
-          mkdir -p $out/share/{applications,icons,pixmaps}
+        mkdir -p $out/share/{applications,icons,pixmaps}
 
-          test -d ${config.app.package}/share/icons && ln -s ${config.app.package}/share/icons/* $out/share/icons
-          test -d ${config.app.package}/share/pixmaps && ln -s ${config.app.package}/share/pixmaps/* $out/share/pixmaps
-        ''
-        + (
-          if config.app.renameDesktopFile then
-            ''
-              test $(ls ${config.app.package}/share/applications/*.desktop | wc -l) -eq 1 || \
-                (echo "You have chosen to automatically rename ${config.app.bwrapPath}'s desktop file, but there is more than 1. You will have to manually specify the appId using config.app.id instead (it should match the desktop file)" && exit 1)
+        test -d ${config.app.package}/share/icons && ln -s ${config.app.package}/share/icons/* $out/share/icons
+        test -d ${config.app.package}/share/pixmaps && ln -s ${config.app.package}/share/pixmaps/* $out/share/pixmaps
+      ''
+      + (
+        if config.app.renameDesktopFile then
+          ''
+            test $(ls ${config.app.package}/share/applications/*.desktop | wc -l) -eq 1 || \
+              (echo "You have chosen to automatically rename ${config.app.bwrapPath}'s desktop file, but there is more than 1. You will have to manually specify the appId using config.app.id instead (it should match the desktop file)" && exit 1)
 
-              cp ${config.app.package}/share/applications/*.desktop $out/share/applications/${config.app.id}.desktop
-            ''
-          else
-            ''
-              test -d ${config.app.package}/share/applications && cp ${config.app.package}/share/applications/* $out/share/applications
-            ''
-        )
-        + (lib.optionalString config.app.overwriteExec ''
-          sed -i "s|^Exec=.*|Exec=$out/bin/${config.app.runScript} ${config.app.execArgs}|" $out/share/applications/*.desktop
-        '');
+            cp ${config.app.package}/share/applications/*.desktop $out/share/applications/${config.app.id}.desktop
+          ''
+        else
+          ''
+            test -d ${config.app.package}/share/applications && cp ${config.app.package}/share/applications/* $out/share/applications
+          ''
+      )
+      + (lib.optionalString config.app.overwriteExec ''
+        sed -i "s|^Exec=.*|Exec=$out/bin/${config.app.runScript} ${config.app.execArgs}|" $out/share/applications/*.desktop
+      '');
     })
     {
       fhsenv.package = pkgs.callPackage ../build-fhsenv-bubblewrap { inherit nixpkgs; };
 
-      fhsenv.bwrap.baseArgs =
-        [
-          "--new-session"
-          "--tmpfs /home"
-          "--tmpfs /mnt"
-          "--tmpfs /run"
-          "--ro-bind /run/current-system /run/current-system"
-          "--ro-bind /run/booted-system /run/booted-system"
-          "--ro-bind-try /run/opengl-driver /run/opengl-driver"
-          "--ro-bind-try /run/opengl-driver-32 /run/opengl-driver-32"
-          "--bind \"$XDG_RUNTIME_DIR/doc/by-app/${config.app.id}\" \"$XDG_RUNTIME_DIR/doc\""
-        ]
-        ++ (lib.unique (
-          lib.mapAttrsToList (
-            name: value:
-            ''--setenv ${name} ${
-              if builtins.typeOf value == "string" then ("\"${value}\"") else (builtins.toString value)
-            }''
-          ) config.app.env
-        ));
+      fhsenv.bwrap.baseArgs = [
+        "--new-session"
+        "--tmpfs /home"
+        "--tmpfs /mnt"
+        "--tmpfs /run"
+        "--ro-bind /run/current-system /run/current-system"
+        "--ro-bind /run/booted-system /run/booted-system"
+        "--ro-bind-try /run/opengl-driver /run/opengl-driver"
+        "--ro-bind-try /run/opengl-driver-32 /run/opengl-driver-32"
+        "--bind \"$XDG_RUNTIME_DIR/doc/by-app/${config.app.id}\" \"$XDG_RUNTIME_DIR/doc\""
+      ]
+      ++ (lib.unique (
+        lib.mapAttrsToList (
+          name: value:
+          ''--setenv ${name} ${
+            if builtins.typeOf value == "string" then ("\"${value}\"") else (builtins.toString value)
+          }''
+        ) config.app.env
+      ));
 
       fhsenv.bwrap.finalArgs = cfg.bwrap.baseArgs ++ cfg.bwrap.additionalArgs;
     }

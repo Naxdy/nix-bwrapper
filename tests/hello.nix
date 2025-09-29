@@ -18,7 +18,6 @@ pkgs.testers.runNixOSTest {
             dbus.enable = false;
             sockets = {
               wayland = false;
-              x11 = false;
               pipewire = false;
               pulseaudio = false;
             };

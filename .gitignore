@@ -1,3 +1,4 @@
+.nixos-test-history
 /result
 /result-*
 /.direnv
