@@ -28,7 +28,14 @@ in
     };
     addPkgs = lib.mkOption {
       type = lib.types.listOf lib.types.package;
-      description = ''List of packages to be added to the sandbox' FHS environment. Includes the packaged app's `buildInputs` by default.'';
+      description = ''
+        List of packages to be added to the sandbox' FHS environment.
+        Includes the packaged app's `buildInputs` by default.
+
+        ---
+
+        Note that the app's `buildInputs` will be preserved unless `lib.mkForce` is used.
+      '';
     };
     runScript = lib.mkOption {
       type = lib.types.str;
@@ -79,14 +86,13 @@ in
       default = if cfg.isFhsenv then (builtins.elemAt (cfg.package.args.targetPkgs pkgs) 0) else null;
       defaultText = lib.literalExpression "if config.app.isFhsenv then (builtins.elemAt (config.app.package.args.targetPkgs pkgs) 0) else null";
       description = ''
-        The unwrapped main package in case `config.app.package` is already FHS-wrapped. The default value picks the first
-        package within the `targetPkgs` list of the input package.
+        The unwrapped main package in case `config.app.package` is already FHS-wrapped.
+        The default value picks the first package within the `targetPkgs` list of the input package.
       '';
     };
     isFhsenv = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      defaultText = lib.literalExpression "config.app.package-unwrapped != null";
       description = ''
         Whether the package in `config.app.package` is already wrapped in an FHS env
       '';
