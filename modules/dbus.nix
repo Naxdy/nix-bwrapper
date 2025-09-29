@@ -37,6 +37,10 @@ let
     - You will receive broadcast signals from the name/ID (if you have a match rule for them)
 
     - You can call StartServiceByName on the name
+
+    ---
+
+    Note that the defaults declared here will be merged with any custom options if not using `lib.mkForce`.
   '';
 
   dbusCallDesc = ''
@@ -45,6 +49,10 @@ let
     Must be of the form [METHOD][@PATH], where METHOD can be either '\*' or a D-Bus interface,
     possible with a '.\*' suffix, or a fully-qualified method name, and PATH is a D-Bus object path,
     possible with a '/\*' suffix.
+
+    ---
+
+    Note that the defaults declared here will be merged with any custom options if not using `lib.mkForce`.
   '';
 
   dbusBroadcastDesc = ''
@@ -53,30 +61,67 @@ let
     Must be of the form [METHOD][@PATH], where METHOD can be either '\*' or a D-Bus interface,
     possible with a '.\*' suffix, or a fully-qualified method name, and PATH is a D-Bus object path,
     possible with a '/\*' suffix.
+
+    ---
+
+    Note that the defaults declared here will be merged with any custom options if not using `lib.mkForce`.
   '';
+
+  defaultTalks = [
+    "org.freedesktop.Notifications"
+    "com.canonical.AppMenu.Registrar"
+    "com.canonical.Unity.LauncherEntry"
+    "org.freedesktop.ScreenSaver"
+    "com.canonical.indicator.application"
+    "org.kde.StatusNotifierWatcher"
+    "org.freedesktop.portal.Documents"
+    "org.freedesktop.portal.Flatpak"
+    "org.freedesktop.portal.Desktop"
+    "org.freedesktop.portal.Notifications"
+    "org.freedesktop.portal.FileChooser"
+  ];
+
+  defaultCalls = [
+    "org.freedesktop.portal.*=*@/org/freedesktop/portal/desktop"
+  ];
+
+  defaultBroadcasts = [
+    "org.freedesktop.portal.Desktop=*@/org/freedesktop/portal/desktop"
+  ];
+
+  defaultSystemTalks = [
+    "com.canonical.AppMenu.Registrar"
+    "com.canonical.Unity.LauncherEntry"
+  ];
 
   cfg = config.dbus;
 
-  commonDbusOpts = {
-    talks = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-      description = dbusTalkDesc;
-      apply = talks: map (e: "--talk=\"${e}\"") (lib.unique talks);
+  commonDbusOpts =
+    {
+      defaultTalks ? [ ],
+      defaultCalls ? [ ],
+      defaultBroadcasts ? [ ],
+    }:
+    {
+      talks = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = defaultTalks;
+        description = dbusTalkDesc;
+        apply = talks: map (e: "--talk=\"${e}\"") (lib.unique talks);
+      };
+      calls = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = defaultCalls;
+        description = dbusCallDesc;
+        apply = talks: map (e: "--call=\"${e}\"") (lib.unique talks);
+      };
+      broadcasts = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = defaultBroadcasts;
+        description = dbusBroadcastDesc;
+        apply = talks: map (e: "--broadcast=\"${e}\"") (lib.unique talks);
+      };
     };
-    calls = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-      description = dbusCallDesc;
-      apply = talks: map (e: "--call=\"${e}\"") (lib.unique talks);
-    };
-    broadcasts = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-      description = dbusBroadcastDesc;
-      apply = talks: map (e: "--broadcast=\"${e}\"") (lib.unique talks);
-    };
-  };
 in
 {
   options.dbus = {
@@ -86,7 +131,7 @@ in
       default = true;
       description = "Whether to enable forwarding access to specific DBus interfaces. Note that without this enabled, portal functionality won't work.";
     };
-    session = commonDbusOpts // {
+    session = (commonDbusOpts { inherit defaultTalks defaultCalls defaultBroadcasts; }) // {
       owns = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [ ];
@@ -102,7 +147,7 @@ in
         internal = true;
       };
     };
-    system = commonDbusOpts // {
+    system = (commonDbusOpts { defaultTalks = defaultSystemTalks; }) // {
       args = lib.mkOption {
         type = lib.types.str;
         internal = true;
@@ -116,32 +161,13 @@ in
         "${config.app.id} has DBus forwarding enabled, but not flatpak emulation. Portal functionality will not work without both.";
 
     # Defaults declared here so they merge with user options by default instead of getting overwritten
-    dbus.session.talks = [
-      "org.freedesktop.Notifications"
-      "com.canonical.AppMenu.Registrar"
-      "com.canonical.Unity.LauncherEntry"
-      "org.freedesktop.ScreenSaver"
-      "com.canonical.indicator.application"
-      "org.kde.StatusNotifierWatcher"
-      "org.freedesktop.portal.Documents"
-      "org.freedesktop.portal.Flatpak"
-      "org.freedesktop.portal.Desktop"
-      "org.freedesktop.portal.Notifications"
-      "org.freedesktop.portal.FileChooser"
-    ];
+    dbus.session.talks = defaultTalks;
 
-    dbus.session.calls = [
-      "org.freedesktop.portal.*=*@/org/freedesktop/portal/desktop"
-    ];
+    dbus.session.calls = defaultCalls;
 
-    dbus.session.broadcasts = [
-      "org.freedesktop.portal.Desktop=*@/org/freedesktop/portal/desktop"
-    ];
+    dbus.session.broadcasts = defaultBroadcasts;
 
-    dbus.system.talks = [
-      "com.canonical.AppMenu.Registrar"
-      "com.canonical.Unity.LauncherEntry"
-    ];
+    dbus.system.talks = defaultSystemTalks;
 
     app.env = {
       DBUS_SESSION_BUS_ADDRESS = "unix:path=$XDG_RUNTIME_DIR/bus";
