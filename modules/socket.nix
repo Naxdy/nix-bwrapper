@@ -1,16 +1,22 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.sockets;
 in
 {
-  imports = [
-    (lib.mkRemovedOptionModule [ "sockets" "x11" ] ''
-      The X11 socket option has been removed due to its ability for sandbox escape.
-      A new implementation using `xwayland-satellite` is underway.
-      For more information, see https://github.com/Naxdy/nix-bwrapper/pull/16'')
-  ];
-
   options.sockets = {
+    x11 = lib.mkOption {
+      description = ''
+        Whether to bind an X11 socket using [xwayland-satellite](https://github.com/Supreeeme/xwayland-satellite).
+        This spawns a unique xorg server per sandboxed application, and does not require your compositor to support xwayland
+      '';
+      default = true;
+      type = lib.types.bool;
+    };
     wayland = lib.mkOption {
       description = "Whether to bind a Wayland socket within the sandbox";
       default = true;
@@ -68,6 +74,54 @@ in
 
       fhsenv.bwrap.additionalArgs = [
         "\"$\{pipewire_binds[@]\}\""
+      ];
+    })
+    (lib.mkIf cfg.x11 {
+      assertions = [
+        {
+          assertion = cfg.wayland;
+          message = "Enabling X11 support via `xwayland-satellite` requires a wayland socket to be available in the sandbox";
+        }
+      ];
+
+      script.preCmds.stage1 = ''
+        test -d "$XDG_RUNTIME_DIR/bwrapper/by-app/${config.app.id}/X11" || mkdir -p "$XDG_RUNTIME_DIR/bwrapper/by-app/${config.app.id}/X11"
+      '';
+
+      # notes:
+      # - using display 99 is arbitrary, to make it less likely to conflict with other X11 sockets
+      # - we need to unshare net, because otherwise xwayland-satellite will listen on localhost, breaking sandboxing
+      script.preCmds.stage2 = ''
+        setup_xwayland_satellite() {
+          ${pkgs.bubblewrap}/bin/bwrap \
+            --unshare-user \
+            --unshare-cgroup \
+            --unshare-pid \
+            --unshare-ipc \
+            --unshare-net \
+            --new-session \
+            --ro-bind "/nix/store" "/nix/store" \
+            --bind "/run" "/run" \
+            --ro-bind "/sys" "/sys" \
+            --dev-bind "/dev" "/dev" \
+            --ro-bind "/etc" "/etc" \
+            --bind "$XDG_RUNTIME_DIR/bwrapper/by-app/${config.app.id}/X11" "/tmp/.X11-unix" \
+            ${lib.optionalString config.flatpak.enable ''--ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info"''} \
+            --die-with-parent \
+            --clearenv \
+            --setenv XDG_RUNTIME_DIR "$XDG_RUNTIME_DIR" \
+            --setenv WAYLAND_DISPLAY "$WAYLAND_DISPLAY" \
+            ''${wayland_binds[@]} \
+            -- \
+            ${pkgs.xwayland-satellite}/bin/xwayland-satellite :99
+        }
+
+        setup_xwayland_satellite &
+      '';
+
+      fhsenv.bwrap.additionalArgs = [
+        "--bind \"$XDG_RUNTIME_DIR/bwrapper/by-app/${config.app.id}/X11\" \"/tmp/.X11-unix\""
+        "--setenv DISPLAY :99"
       ];
     })
   ];

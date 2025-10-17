@@ -17,6 +17,7 @@ pkgs.testers.runNixOSTest {
             fhsenv.skipExtraInstallCmds = true;
             dbus.enable = false;
             sockets = {
+              x11 = false;
               wayland = false;
               pipewire = false;
               pulseaudio = false;

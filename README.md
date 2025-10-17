@@ -15,7 +15,7 @@ Here is a minimal flake that exports a wrapped `discord` package:
 
 ```nix
 {
-  imports = {
+  inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nix-bwrapper.url = "github:Naxdy/nix-bwrapper";
   };
@@ -34,70 +34,46 @@ Here is a minimal flake that exports a wrapped `discord` package:
       app = {
         package = pkgs.discord;
         runScript = "discord";
-        id = "com.discordapp.Discord";
       };
-      mounts = {
-        readWrite = [
-          "$XDG_RUNTIME_DIR/app/com.discordapp.Discord"
-        ];
-      };
-      dbus.session.owns = [
-        "com.discordapp.Discord"
-      ];
+      # ...
     };
   };
 }
 ```
 
+`bwrapper` also provides a `nixosModule` that simply enables the overlay, which can be used in NixOS configurations,
+like so:
+
+```nix
+nixosConfigurations.myMachine = nixpkgs.lib.nixosSystem {
+  system = "x86_64-linux";
+  modules = [
+    bwrapper.nixosModules.default
+    ({ pkgs, ... }: {
+      environment.systemPackages = [
+        (pkgs.mkBwrapper {
+          app = {
+            package = pkgs.discord;
+          };
+          # ...
+        })
+      ];
+    })
+  ];
+};
+```
+
 Packages already using `buildFHSEnv` can also be wrapped, like so:
 
 ```nix
-  packages.lutris-wrapped = pkgs.mkBwrapper ({
-    app = {
-      package = pkgs.lutris;
-      isFhsenv = true; # tells bwrapper that the app is already using buildFHSEnv
-      id = "net.lutris.Lutris";
-      env = {
-        WEBKIT_DISABLE_DMABUF_RENDERER = 1;
-        APPIMAGE_EXTRACT_AND_RUN = 1;
-      };
-    };
-    fhsenv = {
-      skipExtraInstallCmds = false;
-    };
-    dbus = {
-      session = {
-        talks = [
-          "org.freedesktop.Flatpak"
-          "org.kde.StatusNotifierWatcher"
-          "org.kde.KWin"
-          "org.gnome.Mutter.DisplayConfig"
-          "org.freedesktop.ScreenSaver"
-        ];
-        owns = [
-          "net.lutris.Lutris"
-        ];
-      };
-      system = {
-        talks = [
-          "org.freedesktop.UDisks2"
-        ];
-      };
-    };
-    mounts = {
-      read = [
-        "$HOME/.config/kdedefaults"
-        "$HOME/.local/share/color-schemes"
-      ];
-      readWrite = [
-        "$HOME/.steam"
-        "$HOME/.local/share/steam"
-        "$HOME/.local/share/applications"
-        "$HOME/.local/share/desktop-directories"
-        "$HOME/Games"
-      ];
-    };
-  });
+packages.lutris-wrapped = pkgs.mkBwrapper ({
+  app = {
+    package = pkgs.lutris;
+    isFhsenv = true; # tells bwrapper that the app is already using buildFHSEnv
+    id = "net.lutris.Lutris";
+  };
+  # ...
+});
 ```
 
 Packages using `buildFHSEnv` in a custom manner can also be wrapped, by using `mkBwrapperFHSEnv` like so:
@@ -114,18 +90,14 @@ Packages using `buildFHSEnv` in a custom manner can also be wrapped, by using `m
         package-unwrapped = pkgs.bottles-unwrapped;
         id = "com.usebottles.bottles";
       };
-      dbus.system.talks = [
-        "org.freedesktop.UDisks2"
-      ];
-      dbus.session.owns = [
-        "com.usebottles.bottles"
-      ];
+      # ...
     };
   };
 }
 ```
 
-See the `flake.nix` for some other examples.
+See the `flake.nix` for more complete examples. Note that they are only intended as examples, and may not be (fully)
+usable as-is.
 
 ### Options
 
@@ -159,8 +131,11 @@ This behavior can be overridden just like in any other NixOS module, by using `l
 }
 ```
 
-Additionally, `bwrapper` will attempt to bind `pulse`, `pipewire` and `wayland` sockets from `$XDG_RUNTIME_DIR`, as well
-as any `X11` sockets it can find.
+Additionally, `bwrapper` will attempt to bind `pulse`, `pipewire` and `wayland` sockets from `$XDG_RUNTIME_DIR`.
+
+If `sockets.x11` is enabled (which is the default), it will also provide an `X11` socket via
+[xwayland-satellite](https://github.com/Supreeeme/xwayland-satellite). This ensures that every sandboxed app receives
+its own `xorg` instance, meaning that sandboxed `X11` apps cannot spy on each other.
 
 This can be disabled by setting the respective `sockets` option to `false`:
 
@@ -171,20 +146,9 @@ This can be disabled by setting the respective `sockets` option to `false`:
       package = pkgs.slack;
       runScript = "slack";
       execArgs = "-s %U";
-      addPkgs = [
-        pkgs.libdbusmenu # to make global menu work in KDE
-      ];
     };
-    sockets.x11 = false; # prevent Slack from accessing X11
-    dbus.system.talks = [
-      "org.freedesktop.UPower"
-      "org.freedesktop.login1"
-    ];
-    dbus.session.talks = [
-      "org.kde.kwalletd6"
-      "org.freedesktop.secrets"
-      "org.kde.kwalletd5"
-    ];
+    sockets.x11 = false; # do not spawn an X11 socket in this sandbox
+    # ...
   };
 }
 ```
