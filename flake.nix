@@ -68,6 +68,9 @@
         }
       );
 
+      # NOTE: These are only examples that may or may not be functional.
+      # The packages defined here are not intended to be used as-is, as they may become
+      # outdated or lack functionality.
       packages = forEachSupportedSystem (
         { pkgs, system, ... }:
         {
@@ -156,9 +159,12 @@
               runScript = "slack";
               execArgs = "-s %U";
               addPkgs = [
-                pkgs.libdbusmenu # to make global menu work in KDE
+                pkgs.libdbusmenu
               ];
             };
+            mounts.readWrite = [
+              "$HOME/Downloads"
+            ];
             dbus.system.talks = [
               "org.freedesktop.UPower"
               "org.freedesktop.login1"
@@ -167,6 +173,12 @@
               "org.kde.kwalletd6"
               "org.freedesktop.secrets"
               "org.kde.kwalletd5"
+              "org.kde.StatusNotifierWatcher"
+              "org.freedesktop.ScreenSaver"
+              "org.freedesktop.Notifications"
+            ];
+            dbus.session.owns = [
+              "com.slack.slack"
             ];
           };
 
@@ -174,13 +186,25 @@
             app = {
               package = pkgs.discord;
               runScript = "discord";
-              id = "com.discordapp.Discord";
+              env = {
+                ELECTRON_TRASH = "gio";
+              };
             };
-            mounts = {
-              readWrite = [
-                "$XDG_RUNTIME_DIR/app/com.discordapp.Discord"
-              ];
-            };
+            mounts.readWrite = [
+              "$XDG_RUNTIME_DIR/app/com.discordapp.Discord"
+              "$XDG_RUNTIME_DIR/speech-dispatcher"
+              "$HOME/Downloads"
+            ];
+            dbus.session.talks = [
+              "org.freedesktop.ScreenSaver"
+              "org.kde.StatusNotifierWatcher"
+              "com.canonical.AppMenu.Registrar"
+              "com.canonical.indicator.application"
+              "com.canonical.Unity"
+            ];
+            dbus.system.talks = [
+              "org.freedesktop.UPower"
+            ];
             dbus.session.owns = [
               "com.discordapp.Discord"
             ];
@@ -188,7 +212,9 @@
         }
       );
 
-      overlays.default = final: prev: {
+      overlays.default = self.overlays.bwrapper;
+
+      overlays.bwrapper = final: prev: {
         mkBwrapper =
           (import ./modules {
             pkgs = final;
@@ -205,6 +231,16 @@
 
         bwrapperFHSEnv = builtins.throw "`bwrapperFHSEnv` has been replaced by a unified module-based system available under `mkBwrapper`";
       };
+
+      nixosModules.default = self.nixosModules.bwrapper;
+
+      nixosModules.bwrapper =
+        { ... }:
+        {
+          nixpkgs.overlays = [
+            self.overlays.bwrapper
+          ];
+        };
 
       checks = forEachSupportedSystem (
         { pkgs, treefmtEval, ... }:
