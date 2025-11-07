@@ -121,7 +121,7 @@ in
           ''
       )
       + (lib.optionalString config.app.overwriteExec ''
-        sed -i "s|^Exec=.*|Exec=$out/bin/${config.app.runScript} ${config.app.execArgs}|" $out/share/applications/*.desktop
+        sed -i "s|^Exec=.*|Exec=${config.app.runScript} ${config.app.execArgs}|" $out/share/applications/*.desktop
       '');
     })
     {
