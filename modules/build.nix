@@ -102,9 +102,9 @@ in
 
             targetPkgs = pkgs: (envArgs.targetPkgs pkgs) ++ (args.targetPkgs pkgs);
 
-            extraInstallCommands = (args.extraInstallCommands or "") + (envArgs.extraInstallCommands);
+            extraInstallCommands = (args.extraInstallCommands or "") + "\n" + (envArgs.extraInstallCommands);
 
-            extraPreBwrapCmds = (args.extraPreBwrapCmds or "") + envArgs.extraPreBwrapCmds;
+            extraPreBwrapCmds = (args.extraPreBwrapCmds or "") + "\n" + envArgs.extraPreBwrapCmds;
 
             extraBwrapArgs = (args.extraBwrapArgs or [ ]) ++ envArgs.extraBwrapArgs;
           }
