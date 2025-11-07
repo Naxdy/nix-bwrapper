@@ -108,9 +108,7 @@ in
             --bind "$XDG_RUNTIME_DIR/bwrapper/by-app/${config.app.id}/X11" "/tmp/.X11-unix" \
             ${lib.optionalString config.flatpak.enable ''--ro-bind "$HOME/.bwrapper/${config.app.bwrapPath}/.flatpak-info" "/.flatpak-info"''} \
             --die-with-parent \
-            --clearenv \
-            --setenv XDG_RUNTIME_DIR "$XDG_RUNTIME_DIR" \
-            --setenv WAYLAND_DISPLAY "$WAYLAND_DISPLAY" \
+            --unsetenv DISPLAY \
             "''${wayland_binds[@]}" \
             -- \
             ${pkgs.xwayland-satellite}/bin/xwayland-satellite :99
