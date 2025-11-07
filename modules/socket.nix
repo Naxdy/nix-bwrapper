@@ -111,7 +111,7 @@ in
             --clearenv \
             --setenv XDG_RUNTIME_DIR "$XDG_RUNTIME_DIR" \
             --setenv WAYLAND_DISPLAY "$WAYLAND_DISPLAY" \
-            ''${wayland_binds[@]} \
+            "''${wayland_binds[@]}" \
             -- \
             ${pkgs.xwayland-satellite}/bin/xwayland-satellite :99
         }
