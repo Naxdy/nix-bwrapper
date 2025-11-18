@@ -163,7 +163,6 @@ let
       ignored=(/nix /dev /proc /etc ${optionalString privateTmp "/tmp"})
       ro_mounts=()
       symlinks=()
-      etc_ignored=()
 
       ${extraPreBwrapCmds}
 
@@ -181,38 +180,13 @@ let
         fi
       done
 
-      # loop through the entries of /etc in the fhs environment.
-      if [[ -d ${fhsenv}/etc ]]; then
-        for i in ${fhsenv}/etc/*; do
-          path="/''${i##*/}"
-          # NOTE: we're binding /etc/fonts and /etc/ssl/certs from the host so we
-          # don't want to override it with a path from the FHS environment.
-          if [[ $path == '/fonts' || $path == '/ssl' ]]; then
-            continue
-          fi
-          if [[ -L $i ]]; then
-            symlinks+=(--symlink "$i" "/etc$path")
-          else
-            ro_mounts+=(--ro-bind "$i" "/etc$path")
-          fi
-          etc_ignored+=("/etc$path")
-        done
-      fi
-
-      # propagate /etc from the actual host if nested
-      if [[ -e /.host-etc ]]; then
-        ro_mounts+=(--ro-bind /.host-etc /.host-etc)
-      else
-        ro_mounts+=(--ro-bind /etc /.host-etc)
-      fi
+      # link /etc/profile from the fhsenv
+      ro_mounts+=(--ro-bind ${fhsenv}/etc/profile /etc/profile)
 
       # link selected etc entries from the actual root
       for i in ${escapeShellArgs etcBindEntries}; do
-        if [[ "''${etc_ignored[@]}" =~ "$i" ]]; then
-          continue
-        fi
         if [[ -e $i ]]; then
-          symlinks+=(--symlink "/.host-etc/''${i#/etc/}" "$i")
+          symlinks+=(--ro-bind-try "$i" "$i")
         fi
       done
 
