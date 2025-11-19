@@ -160,7 +160,7 @@ let
       initArgs ? "",
     }:
     ''
-      ignored=(/nix /dev /proc /etc ${optionalString privateTmp "/tmp"})
+      ignored=(/nix /dev /proc /etc /mnt ${optionalString privateTmp "/tmp"})
       ro_mounts=()
       symlinks=()
       etc_ignored=()
