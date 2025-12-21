@@ -32,6 +32,11 @@ in
       default = true;
       type = lib.types.bool;
     };
+    cups = lib.mkOption {
+      description = "Whether to bind a cups socket withihn the sandbox";
+      default = false;
+      type = lib.types.bool;
+    };
   };
 
   config = lib.mkMerge [
@@ -120,6 +125,11 @@ in
       fhsenv.bwrap.additionalArgs = [
         "--bind \"$XDG_RUNTIME_DIR/bwrapper/by-app/${config.app.id}/X11\" \"/tmp/.X11-unix\""
         "--setenv DISPLAY :99"
+      ];
+    })
+    (lib.mkIf cfg.cups {
+      fhsenv.bwrap.additionalArgs = [
+        ''--ro-bind-try "/run/cups/cups.sock" "/run/cups/cups.sock"''
       ];
     })
   ];
