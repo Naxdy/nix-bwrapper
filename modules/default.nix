@@ -87,19 +87,7 @@ let
   ];
 in
 {
-  bwrapper = mod: (evalMod [ mod ]).config.build.package;
-
-  bwrapperFHSEnv =
-    mod:
-    (evalMod [
-      mod
-      {
-        app = {
-          package = null;
-          isFhsenv = true;
-        };
-      }
-    ]).config.build.fhsenv;
+  bwrapperEval = mod: (evalMod [ mod ]);
 
   options-json =
     (pkgs.nixosOptionsDoc {

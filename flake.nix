@@ -215,17 +215,23 @@
       overlays.default = self.overlays.bwrapper;
 
       overlays.bwrapper = final: prev: {
-        mkBwrapper =
+        bwrapperEval =
           (import ./modules {
             pkgs = final;
             inherit nixpkgs;
-          }).bwrapper;
+          }).bwrapperEval;
+
+        mkBwrapper = mod: (final.bwrapperEval mod).config.build.package;
 
         mkBwrapperFHSEnv =
-          (import ./modules {
-            pkgs = final;
-            inherit nixpkgs;
-          }).bwrapperFHSEnv;
+          mod:
+          (final.bwrapperEval {
+            imports = [ mod ];
+            app = {
+              package = null;
+              isFhsenv = true;
+            };
+          }).config.build.fhsenv;
 
         bwrapper = builtins.throw "`bwrapper` has been replaced by a unified module-based system available under `mkBwrapper`";
 
