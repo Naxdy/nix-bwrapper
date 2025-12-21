@@ -159,7 +159,82 @@ Access is granted to all hardware devices by default.
 
 ### How to package a new application
 
-#### Your application has a flatpak
+#### Your application has a flatpak (`.json` manifest)
+
+If the application's manifest is a `.json` file, you can pre-fill most of bwrapper's options by setting
+`flatpak.manifestFile` accordingly. For example, for librewolf you could have:
+
+```nix
+{
+  packages.librewolf-wrapped = pkgs.mkBwrapper {
+    flatpak.manifestFile = pkgs.fetchurl {
+      url = "https://github.com/flathub/io.gitlab.librewolf-community/raw/refs/heads/master/io.gitlab.librewolf-community.json";
+      hash = "...";
+    };
+  };
+}
+```
+
+And this will already take care of most (if not all) necessary options for you. You can still override options normally
+using Nix' module system, e.g. to disallow access to some directory or socket that is listed in the manifest by default.
+
+At the moment, bwrapper supports pre-filling options for the following:
+
+- `app.id`
+- `app.env` variables
+- sockets: `pulseaudio`, `pipewire`, `cups`
+- fhsenv options: `unshareNet`, `unshareIpc`
+- `mounts.read` and `mounts.readWrite`, including substitutions for: `home`, `xdg-desktop`, `xdg-documents`,
+  `xdg-download`, `xdg-music`, `xdg-pictures`, `xdg-public-share`, `xdg-templates`, `xdg-videos`, `xdg-run`,
+  `xdg-config`, `xdg-cache`, `xdg-data`
+- `mounts.sandbox`
+- `dbus.{session,system}.{talks,owns,calls}`
+
+If you want to see exactly what the final config will be, you can use `bwrapperEval` and inspect the resulting `config`
+attribute, for example:
+
+```nix
+{
+  packages.my-librewolf-config = (pkgs.bwrapperEval {
+    flatpak.manifestFile = pkgs.fetchurl {
+      url = "https://github.com/flathub/io.gitlab.librewolf-community/raw/refs/heads/master/io.gitlab.librewolf-community.json";
+      hash = "...";
+    };
+  }).config;
+}
+```
+
+Then you can run `nix eval .#my-librewolf-config` to get a full dump of your final config, or run something like
+`nix eval .#my-librewolf-config.app` instead, to only inspect parts of it.
+
+You can also pass `--json` to parts of the config that can be converted to valid JSON, i.e. anything not under `build`.
+For example, running `nix eval .#my-librewolf-config.app --json` could produce something like this:
+
+```json
+{
+  "addPkgs": [
+    "/nix/store/wbmwh79ccgjfm6xl9zgxrk6l62xivds6-gtk+3-3.24.49-dev"
+  ],
+  "bwrapPath": "librewolf",
+  "env": {
+    "DBUS_SESSION_BUS_ADDRESS": "unix:path=$XDG_RUNTIME_DIR/bus",
+    "DICPATH": "/usr/share/hunspell",
+    "MOZ_USE_XINPUT2": "1",
+    "NOTIFY_IGNORE_PORTAL": 1,
+    "WAYLAND_DISPLAY": "$WAYLAND_DISPLAY"
+  },
+  "execArgs": "",
+  "id": "io.gitlab.librewolf-community",
+  "isFhsenv": false,
+  "overwriteExec": true,
+  "package": "/nix/store/g91s89dc8lwnwdwhnyr2mq02k5xnc227-librewolf-143.0-1",
+  "package-unwrapped": null,
+  "renameDesktopFile": true,
+  "runScript": "librewolf"
+}
+```
+
+#### Your application has a flatpak (`.yaml` manifest)
 
 First, obtain the info about the permissions the app needs:
 

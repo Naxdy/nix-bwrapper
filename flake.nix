@@ -83,6 +83,17 @@
             baseHref = "/nix-bwrapper/";
           };
 
+          librewolf-wrapped = pkgs.mkBwrapper {
+            app = {
+              package = pkgs.librewolf;
+              runScript = "librewolf";
+            };
+            flatpak.manifestFile = pkgs.fetchurl {
+              url = "https://raw.githubusercontent.com/flathub/io.gitlab.librewolf-community/550f51a8f4ed02430d217e62ac4d92583b2b30ea/io.gitlab.librewolf-community.json";
+              hash = "sha256-QtN4n2btK254Ar2R59ihFc0K2+Uu5Eia05HZnTpw7z4=";
+            };
+          };
+
           brave-wrapped = pkgs.mkBwrapper {
             app = {
               package = pkgs.brave;
