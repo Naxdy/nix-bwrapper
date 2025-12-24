@@ -6,6 +6,24 @@
 }:
 let
   cfg = config.flatpak;
+
+  # Convert a manifest file (YAML or JSON) to normalized JSON.
+  # This handles both formats since JSON is valid YAML, and normalizes
+  # the "app-id" field to "id" (YAML manifests use "app-id", JSON uses "id").
+  normalizeManifest =
+    manifestFile:
+    pkgs.runCommand "manifest.json"
+      {
+        nativeBuildInputs = [
+          pkgs.yj
+          pkgs.jq
+        ];
+      }
+      ''
+        # Convert YAML to JSON (works for both YAML and JSON input since JSON is valid YAML),
+        # then normalize "app-id" to "id" for consistency with nix-bwrapper expectations
+        yj -yj < ${manifestFile} | jq 'if has("app-id") then . + {id: ."app-id"} | del(."app-id") else . end' > $out
+      '';
 in
 {
   options.flatpak = {
@@ -25,10 +43,13 @@ in
         }
       '';
       description = ''
-        A path pointing to a flatpak manifest in JSON format.
+        A path pointing to a Flatpak manifest file in JSON or YAML format.
 
         If set, will parse the given manifest file and pre-set applicable options in bwrapper wherever possible.
         In a perfect world, this should make it unnecessary for you to have to customize any other options.
+
+        Both JSON and YAML formats are supported. The manifest is automatically normalized at build time,
+        including conversion of the `app-id` field (used in YAML manifests) to `id` (used in JSON manifests).
       '';
     };
   };
@@ -63,7 +84,9 @@ in
 
       (lib.mkIf (cfg.manifestFile != null) (
         let
-          manifest = builtins.fromJSON (builtins.readFile cfg.manifestFile);
+          # Use the normalized manifest (handles YAML/JSON and app-id normalization)
+          normalizedManifestFile = normalizeManifest cfg.manifestFile;
+          manifest = builtins.fromJSON (builtins.readFile normalizedManifestFile);
 
           argsOf =
             type:
