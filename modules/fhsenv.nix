@@ -23,6 +23,11 @@ in
         type = lib.types.listOf lib.types.str;
         internal = true;
       };
+      additionalUserArgs = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        description = "Additional arguments to pass to bwrap directly.";
+        default = [];
+      };
     };
     extraInstallCmds = lib.mkOption {
       type = lib.types.lines;
@@ -147,7 +152,7 @@ in
         ) config.app.env
       ));
 
-      fhsenv.bwrap.finalArgs = cfg.bwrap.baseArgs ++ cfg.bwrap.additionalArgs;
+      fhsenv.bwrap.finalArgs = cfg.bwrap.baseArgs ++ cfg.bwrap.additionalArgs ++ cfg.bwrap.additionalUserArgs;
     }
   ];
 }
