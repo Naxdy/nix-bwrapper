@@ -108,6 +108,11 @@ in
       defaultText = lib.literalExpression "config.app.package.pname";
       description = "The path under $HOME/.bwrapper where to store sandboxed application data";
     };
+    additionalUserArgs = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      description = "Additional arguments to pass to bwrap directly.";
+      default = [ ];
+    };
   };
 
   config = {

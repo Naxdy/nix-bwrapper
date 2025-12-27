@@ -7,6 +7,7 @@
 }:
 let
   cfg = config.fhsenv;
+  appcfg = config.app;
 in
 {
   options.fhsenv = {
@@ -22,11 +23,6 @@ in
       additionalArgs = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         internal = true;
-      };
-      additionalUserArgs = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        description = "Additional arguments to pass to bwrap directly.";
-        default = [];
       };
     };
     extraInstallCmds = lib.mkOption {
@@ -152,7 +148,7 @@ in
         ) config.app.env
       ));
 
-      fhsenv.bwrap.finalArgs = cfg.bwrap.baseArgs ++ cfg.bwrap.additionalArgs ++ cfg.bwrap.additionalUserArgs;
+      fhsenv.bwrap.finalArgs = cfg.bwrap.baseArgs ++ cfg.bwrap.additionalArgs ++ appcfg.additionalUserArgs;
     }
   ];
 }
