@@ -12,6 +12,17 @@ let
   # the "app-id" field to "id" (YAML manifests use "app-id", JSON uses "id").
   normalizeManifest =
     manifestFile:
+    let
+      # Handle both derivations (like fetchurl) and direct paths.
+      # For derivations, we need to extract the actual store path, not the .drv path.
+      # String interpolation of a derivation produces the .drv path, which doesn't
+      # contain the actual file content. unsafeGetStorePath extracts the output path.
+      manifestPath =
+        if builtins.typeOf manifestFile == "derivation" then
+          builtins.unsafeGetStorePath manifestFile
+        else
+          manifestFile;
+    in
     pkgs.runCommand "manifest.json"
       {
         nativeBuildInputs = [
@@ -22,7 +33,7 @@ let
       ''
         # Convert YAML to JSON (works for both YAML and JSON input since JSON is valid YAML),
         # then normalize "app-id" to "id" for consistency with nix-bwrapper expectations
-        yj -yj < ${manifestFile} | jq 'if has("app-id") then . + {id: ."app-id"} | del(."app-id") else . end' > $out
+        yj -yj < "${manifestPath}" | jq 'if has("app-id") then . + {id: ."app-id"} | del(."app-id") else . end' > $out
       '';
 in
 {
