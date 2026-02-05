@@ -141,9 +141,9 @@ in
       ++ (lib.unique (
         lib.mapAttrsToList (
           name: value:
-          ''--setenv ${name} ${
+          "--setenv ${name} ${
             if builtins.typeOf value == "string" then ("\"${value}\"") else (builtins.toString value)
-          }''
+          }"
         ) config.app.env
       ));
 
