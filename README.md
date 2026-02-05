@@ -159,14 +159,15 @@ Access is granted to all hardware devices by default.
 
 ### How to package a new application
 
-#### Your application has a flatpak (`.json` manifest)
+#### Your application has a flatpak manifest
 
-If the application's manifest is a `.json` file, you can pre-fill most of bwrapper's options by setting
-`flatpak.manifestFile` accordingly. For example, for librewolf you could have:
+If the application has a Flatpak manifest (either `.json` or `.yaml`/`.yml`), you can pre-fill most of bwrapper's
+options by setting `flatpak.manifestFile` accordingly. For example, for librewolf you could have:
 
 ```nix
 {
   packages.librewolf-wrapped = pkgs.mkBwrapper {
+    app.package = pkgs.librewolf;
     flatpak.manifestFile = pkgs.fetchurl {
       url = "https://github.com/flathub/io.gitlab.librewolf-community/raw/refs/heads/master/io.gitlab.librewolf-community.json";
       hash = "...";
@@ -175,7 +176,24 @@ If the application's manifest is a `.json` file, you can pre-fill most of bwrapp
 }
 ```
 
-And this will already take care of most (if not all) necessary options for you. You can still override options normally
+YAML manifests are also supported directly:
+
+```nix
+{
+  packages.signal-wrapped = pkgs.mkBwrapper {
+    app.package = pkgs.signal-desktop;
+    flatpak.manifestFile = pkgs.fetchurl {
+      url = "https://github.com/flathub/org.signal.Signal/raw/refs/heads/master/org.signal.Signal.yaml";
+      hash = "...";
+    };
+  };
+}
+```
+
+The manifest is automatically normalized at build time, including conversion of the `app-id` field (used in YAML
+manifests) to `id` (used in JSON manifests).
+
+This will already take care of most (if not all) necessary options for you. You can still override options normally
 using Nix' module system, e.g. to disallow access to some directory or socket that is listed in the manifest by default.
 
 At the moment, bwrapper supports pre-filling options for the following:
@@ -234,7 +252,10 @@ For example, running `nix eval .#my-librewolf-config.app --json` could produce s
 }
 ```
 
-#### Your application has a flatpak (`.yaml` manifest)
+#### Manually packaging applications without using a manifest
+
+If the application doesn't have a suitable Flatpak manifest, or you prefer to configure permissions manually, you can
+specify all options explicitly.
 
 First, obtain the info about the permissions the app needs:
 
@@ -244,10 +265,10 @@ First, obtain the info about the permissions the app needs:
 1. At the bottom, click on "Links", and then "Manifest". For Slack, it should lead you
    [here](https://github.com/flathub/com.slack.Slack).
 
-1. Open the `.yaml` file, in this case `com.slack.Slack.yaml`
+1. Open the manifest file (`.json`, `.yaml`, or `.yml`), in this case `com.slack.Slack.yaml`
 
 This file shows all the permissions that are being granted to the application. You can use this as a blueprint for which
-permissions to grant in your wrapper. We can see, that the file contains the following:
+permissions to grant in your wrapper. We can see that the file contains the following:
 
 ```yaml
 finish-args:
@@ -325,7 +346,7 @@ That leaves the rest to be added. The final wrapper looks as follows:
 Note that even though some dbus talks, e.g. `org.freedesktop.Notifications`, are already granted by `bwrapper` by
 default, specifying it here again doesn't do any harm, since it filters for unique names anyway.
 
-#### Your application does not have a flatpak
+#### Your application does not have a flatpak manifest
 
 Begin with a minimal example (see the `flake.nix` for a minimal example using `brave`). Then, run your application from
 a terminal (to see the logs it outputs). Use it as you would normally, if you notice something doesn't work quite right
