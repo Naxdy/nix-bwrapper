@@ -53,7 +53,30 @@
         );
     in
     {
-      lib = forEachSupportedSystem ({ pkgs, ... }: import ./modules { inherit pkgs nixpkgs; });
+      lib = {
+        mkNixBwrapper =
+          pkgs:
+          let
+            bwrapperEval = (self.lib.forPkgs pkgs).bwrapperEval;
+          in
+          {
+            inherit bwrapperEval;
+
+            mkBwrapper = mod: (bwrapperEval mod).config.build.package;
+
+            mkBwrapperFHSEnv =
+              mod:
+              (bwrapperEval {
+                imports = [ mod ];
+                app = {
+                  package = null;
+                  isFhsenv = true;
+                };
+              }).config.build.fhsenv;
+          };
+
+        forPkgs = pkgs: import ./modules { inherit pkgs nixpkgs; };
+      };
 
       formatter = forEachSupportedSystem ({ treefmtEval, ... }: treefmtEval.config.build.wrapper);
 
@@ -74,10 +97,10 @@
       packages = forEachSupportedSystem (
         { pkgs, system, ... }:
         {
-          optionsDoc = self.lib.${system}.options-json;
+          optionsDoc = (self.lib.forPkgs pkgs).options-json;
 
           search = nuschtosSearch.packages.${system}.mkSearch {
-            optionsJSON = self.lib.${system}.options-json + "/share/doc/nixos/options.json";
+            optionsJSON = (self.lib.forPkgs pkgs).options-json + "/share/doc/nixos/options.json";
             urlPrefix = "https://github.com/Naxdy/nix-bwrapper/tree/main/";
             title = "Nix Bwrapper Options Search";
             baseHref = "/nix-bwrapper/";
@@ -226,23 +249,11 @@
       overlays.default = self.overlays.bwrapper;
 
       overlays.bwrapper = final: prev: {
-        bwrapperEval =
-          (import ./modules {
-            pkgs = final;
-            inherit nixpkgs;
-          }).bwrapperEval;
-
-        mkBwrapper = mod: (final.bwrapperEval mod).config.build.package;
-
-        mkBwrapperFHSEnv =
-          mod:
-          (final.bwrapperEval {
-            imports = [ mod ];
-            app = {
-              package = null;
-              isFhsenv = true;
-            };
-          }).config.build.fhsenv;
+        inherit (self.lib.mkNixBwrapper final)
+          bwrapperEval
+          mkBwrapper
+          mkBwrapperFHSEnv
+          ;
 
         bwrapper = builtins.throw "`bwrapper` has been replaced by a unified module-based system available under `mkBwrapper`";
 
