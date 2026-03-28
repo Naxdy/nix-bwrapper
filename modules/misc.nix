@@ -1,7 +1,10 @@
-# stolen from https://github.com/NixOS/nixpkgs/blob/698214a32beb4f4c8e3942372c694f40848b360d/nixos/modules/misc/assertions.nix#L1-L36
 { lib, ... }:
+let
+  inherit (lib) mkOption types;
+in
 {
   options = {
+    # stolen from https://github.com/NixOS/nixpkgs/blob/698214a32beb4f4c8e3942372c694f40848b360d/nixos/modules/misc/assertions.nix#L1-L36
     assertions = lib.mkOption {
       type = lib.types.listOf lib.types.unspecified;
       internal = true;
@@ -29,6 +32,23 @@
         the evaluation of the system configuration.
       '';
     };
+
+    meta = {
+      name = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = ''
+          The name of this module.
+        '';
+      };
+
+      description = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = ''
+          A description of the module.
+        '';
+      };
+    };
   };
-  # impl of assertions is in <nixpkgs/nixos/modules/system/activation/top-level.nix>
 }

@@ -40,7 +40,7 @@ in
   options.flatpak = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Whether to enable certain tricks to make the sandboxed app think it's being run as a flatpak. This is required for portals to work.";
     };
 

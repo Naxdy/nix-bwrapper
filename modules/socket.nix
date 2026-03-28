@@ -14,22 +14,22 @@ in
         Whether to bind an X11 socket using [xwayland-satellite](https://github.com/Supreeeme/xwayland-satellite).
         This spawns a unique xorg server per sandboxed application, and does not require your compositor to support xwayland
       '';
-      default = true;
+      default = false;
       type = lib.types.bool;
     };
     wayland = lib.mkOption {
       description = "Whether to bind a Wayland socket within the sandbox";
-      default = true;
+      default = false;
       type = lib.types.bool;
     };
     pipewire = lib.mkOption {
       description = "Whether to bind a Pipewire socket within the sandbox";
-      default = true;
+      default = false;
       type = lib.types.bool;
     };
     pulseaudio = lib.mkOption {
       description = "Whether to bind a Pulseaudio socket within the sandbox";
-      default = true;
+      default = false;
       type = lib.types.bool;
     };
     cups = lib.mkOption {

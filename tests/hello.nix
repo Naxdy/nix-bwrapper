@@ -11,17 +11,6 @@ pkgs.testers.runNixOSTest {
               package = pkgs.hello;
               runScript = "hello";
             };
-
-            # disable things not needed by cli apps or not available
-            flatpak.enable = false;
-            fhsenv.skipExtraInstallCmds = true;
-            dbus.enable = false;
-            sockets = {
-              x11 = false;
-              wayland = false;
-              pipewire = false;
-              pulseaudio = false;
-            };
           })
         ];
       };

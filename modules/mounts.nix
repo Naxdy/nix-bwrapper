@@ -54,37 +54,6 @@ in
 
   config = lib.mkMerge [
     {
-      # We set the paths here instead of under `default` to ensure that
-      # users don't accidentally override all (they can still be overridden
-      # using `lib.mkForce`)
-
-      mounts.read = [
-        "$HOME/.icons"
-        "$HOME/.fonts"
-        "$HOME/.themes"
-        "$HOME/.config/gtk-3.0"
-        "$HOME/.config/gtk-4.0"
-        "$HOME/.config/gtk-2.0"
-        "$HOME/.config/Kvantum"
-        "$HOME/.config/gtkrc-2.0"
-        "$HOME/.local/share/color-schemes"
-      ];
-
-      mounts.sandbox = [
-        {
-          name = "config";
-          path = "$HOME/.config";
-        }
-        {
-          name = "local";
-          path = "$HOME/.local";
-        }
-        {
-          name = "cache";
-          path = "$HOME/.cache";
-        }
-      ];
-
       script.preCmds.stage1 =
         (builtins.concatStringsSep "\n" (
           map (

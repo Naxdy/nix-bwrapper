@@ -3,6 +3,10 @@
 { pkgs, nixpkgs, ... }:
 let
   konsole-wrapped = pkgs.mkBwrapper {
+    imports = [
+      pkgs.bwrapperPresets.desktop
+    ];
+
     app = {
       package = pkgs.kdePackages.konsole;
       runScript = "konsole";
@@ -13,7 +17,7 @@ let
       unshareIpc = false;
     };
 
-    fhsenv.skipExtraInstallCmds = true;
+    fhsenv.performDesktopPostInstall = false;
     flatpak.enable = false;
     dbus.enable = false;
 

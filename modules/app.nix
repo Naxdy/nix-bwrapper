@@ -50,7 +50,7 @@ in
     };
     overwriteExec = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Whether to overwrite the `Exec` section in the app's `.desktop` file";
     };
     package = lib.mkOption {
@@ -99,7 +99,7 @@ in
     };
     renameDesktopFile = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Whether to rename the application's desktop file to its new app id in `config.app.id`";
     };
     bwrapPath = lib.mkOption {

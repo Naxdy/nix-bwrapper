@@ -28,8 +28,6 @@
       supportedSystems = [
         "x86_64-linux"
         "aarch64-linux"
-        "x86_64-darwin"
-        "aarch64-darwin"
       ];
 
       forEachSupportedSystem =
@@ -43,16 +41,6 @@
               overlays = [
                 self.overlays.default
               ];
-
-              # needed for the example packages
-              config.allowUnfreePredicate =
-                pkg:
-                builtins.elem (pkgs.lib.getName pkg) [
-                  "steam"
-                  "steam-unwrapped"
-                  "discord"
-                  "slack"
-                ];
             };
 
             treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
@@ -65,7 +53,8 @@
         mkNixBwrapper =
           pkgs:
           let
-            bwrapperEval = (self.lib.forPkgs pkgs).bwrapperEval;
+            bwrapperLib = (self.lib.forPkgs pkgs);
+            bwrapperEval = (bwrapperLib).bwrapperEval;
           in
           {
             inherit bwrapperEval;
@@ -81,6 +70,8 @@
                   isFhsenv = true;
                 };
               }).config.build.fhsenv;
+
+            bwrapperPresets = bwrapperLib.presets;
           };
 
         forPkgs = pkgs: import ./modules { inherit pkgs nixpkgs; };
@@ -99,13 +90,13 @@
         }
       );
 
-      # NOTE: These are only examples that may or may not be functional.
-      # The packages defined here are not intended to be used as-is, as they may become
-      # outdated or lack functionality.
       packages = forEachSupportedSystem (
         { pkgs, system, ... }:
+        let
+          bwrapperLib = self.lib.forPkgs pkgs;
+        in
         {
-          optionsDoc = (self.lib.forPkgs pkgs).options-json;
+          optionsDoc = bwrapperLib.options-json;
 
           search = nuschtosSearch.packages.${system}.mkSearch {
             optionsJSON = (self.lib.forPkgs pkgs).options-json + "/share/doc/nixos/options.json";
@@ -113,160 +104,28 @@
             title = "Nix Bwrapper Options Search";
             baseHref = "/nix-bwrapper/";
           };
-
-          librewolf-wrapped = pkgs.mkBwrapper {
-            app = {
-              package = pkgs.librewolf;
-              runScript = "librewolf";
-            };
-            flatpak.manifestFile = pkgs.fetchurl {
-              url = "https://raw.githubusercontent.com/flathub/io.gitlab.librewolf-community/550f51a8f4ed02430d217e62ac4d92583b2b30ea/io.gitlab.librewolf-community.json";
-              hash = "sha256-QtN4n2btK254Ar2R59ihFc0K2+Uu5Eia05HZnTpw7z4=";
-            };
-          };
-
-          brave-wrapped = pkgs.mkBwrapper {
-            app = {
-              package = pkgs.brave;
-              runScript = "brave";
-            };
-          };
-
-          lutris-wrapped = pkgs.mkBwrapper ({
-            app = {
-              package = pkgs.lutris;
-              isFhsenv = true;
-              id = "net.lutris.Lutris";
-              env = {
-                WEBKIT_DISABLE_DMABUF_RENDERER = 1;
-                APPIMAGE_EXTRACT_AND_RUN = 1;
-              };
-            };
-            fhsenv = {
-              skipExtraInstallCmds = false;
-            };
-            dbus = {
-              session = {
-                talks = [
-                  "org.freedesktop.Flatpak"
-                  "org.kde.StatusNotifierWatcher"
-                  "org.kde.KWin"
-                  "org.gnome.Mutter.DisplayConfig"
-                  "org.freedesktop.ScreenSaver"
-                ];
-                owns = [
-                  "net.lutris.Lutris"
-                ];
-              };
-              system = {
-                talks = [
-                  "org.freedesktop.UDisks2"
-                ];
-              };
-            };
-            mounts = {
-              read = [
-                "$HOME/.config/kdedefaults"
-                "$HOME/.local/share/color-schemes"
-              ];
-              readWrite = [
-                "$HOME/.steam"
-                "$HOME/.local/share/steam"
-                "$HOME/.local/share/applications"
-                "$HOME/.local/share/desktop-directories"
-                "$HOME/Games"
-              ];
-            };
-          });
-
-          bottles-wrapped = pkgs.bottles.override {
-            # need to override it like this because `pkgs.bottles` is a `symlinkJoin`
-            buildFHSEnv = pkgs.mkBwrapperFHSEnv {
-              app = {
-                package-unwrapped = pkgs.bottles-unwrapped;
-                id = "com.usebottles.bottles";
-              };
-              dbus.system.talks = [
-                "org.freedesktop.UDisks2"
-              ];
-              dbus.session.owns = [
-                "com.usebottles.bottles"
-              ];
-            };
-          };
-
-          slack-wrapped = pkgs.mkBwrapper {
-            app = {
-              package = pkgs.slack;
-              runScript = "slack";
-              execArgs = "-s %U";
-              addPkgs = [
-                pkgs.libdbusmenu
-              ];
-            };
-            mounts.readWrite = [
-              "$HOME/Downloads"
-            ];
-            dbus.system.talks = [
-              "org.freedesktop.UPower"
-              "org.freedesktop.login1"
-            ];
-            dbus.session.talks = [
-              "org.kde.kwalletd6"
-              "org.freedesktop.secrets"
-              "org.kde.kwalletd5"
-              "org.kde.StatusNotifierWatcher"
-              "org.freedesktop.ScreenSaver"
-              "org.freedesktop.Notifications"
-            ];
-            dbus.session.owns = [
-              "com.slack.slack"
-            ];
-          };
-
-          discord-wrapped = pkgs.mkBwrapper {
-            app = {
-              package = pkgs.discord;
-              runScript = "discord";
-              env = {
-                ELECTRON_TRASH = "gio";
-              };
-            };
-            mounts.readWrite = [
-              "$XDG_RUNTIME_DIR/app/com.discordapp.Discord"
-              "$XDG_RUNTIME_DIR/speech-dispatcher"
-              "$HOME/Downloads"
-            ];
-            dbus.session.talks = [
-              "org.freedesktop.ScreenSaver"
-              "org.kde.StatusNotifierWatcher"
-              "com.canonical.AppMenu.Registrar"
-              "com.canonical.indicator.application"
-              "com.canonical.Unity"
-            ];
-            dbus.system.talks = [
-              "org.freedesktop.UPower"
-            ];
-            dbus.session.owns = [
-              "com.discordapp.Discord"
-            ];
-          };
         }
       );
 
       overlays.default = self.overlays.bwrapper;
 
-      overlays.bwrapper = final: prev: {
-        inherit (self.lib.mkNixBwrapper final)
-          bwrapperEval
-          mkBwrapper
-          mkBwrapperFHSEnv
-          ;
+      overlays.bwrapper =
+        final: prev:
+        let
+          bwrapperLib = self.lib.mkNixBwrapper final;
+        in
+        {
+          inherit (bwrapperLib)
+            bwrapperEval
+            mkBwrapper
+            mkBwrapperFHSEnv
+            bwrapperPresets
+            ;
 
-        bwrapper = builtins.throw "`bwrapper` has been replaced by a unified module-based system available under `mkBwrapper`";
+          bwrapper = builtins.throw "`bwrapper` has been replaced by a unified module-based system available under `mkBwrapper`";
 
-        bwrapperFHSEnv = builtins.throw "`bwrapperFHSEnv` has been replaced by a unified module-based system available under `mkBwrapper`";
-      };
+          bwrapperFHSEnv = builtins.throw "`bwrapperFHSEnv` has been replaced by a unified module-based system available under `mkBwrapper`";
+        };
 
       nixosModules.default = self.nixosModules.bwrapper;
 

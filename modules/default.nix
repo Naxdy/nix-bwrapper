@@ -85,6 +85,21 @@ let
       _module.args.pkgs = lib.mkForce noPkgs;
     }
   ];
+
+  presets = lib.mapAttrs' (
+    name: value:
+    let
+      f = import ../presets/${name};
+      instance = f (lib.mapAttrs (n: _: abort "evaluating ${n} for `meta` failed") (lib.functionArgs f));
+    in
+    {
+      inherit (instance.meta) name;
+      value = {
+        inherit (instance) meta;
+        module = f;
+      };
+    }
+  ) (builtins.readDir ../presets);
 in
 {
   bwrapperEval = mod: (evalMod [ mod ]);
@@ -95,4 +110,8 @@ in
     }).optionsJSON;
 
   inherit evalMod;
+
+  presets = lib.mapAttrs (_: v: v.module) presets;
+
+  presets-meta = lib.mapAttrs (_: v: v.meta) presets;
 }

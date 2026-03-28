@@ -31,19 +31,22 @@ in
         mv $out/bin/''${config.app.runScript} $out/bin/myCustomAppName
       '';
       description = ''
-        Extra install commands to be passed to `buildFHSEnv`. If `config.fhsenv.skipExtraInstallCmds`
-        is `false`, this will copy over any application icons and desktop files. Note that whatever you
-        set this value to, it will be merged with the default, unless you set `config.fhsenv.skipExtraInstallCmds = true`.
+        Extra install commands to be passed to `buildFHSEnv`. To populate this with sensible defaults for desktop
+        applications, see `config.fhsenv.performDesktopPostInstall`.
 
         You should not need to modify this, unless you need some custom logic, e.g. renaming the final
         executable file name.
       '';
     };
-    skipExtraInstallCmds = lib.mkOption {
+    performDesktopPostInstall = lib.mkOption {
       type = lib.types.bool;
-      default = config.app.isFhsenv;
-      defaultText = lib.literalExpression "config.app.isFhsenv";
-      description = "Whether to skip extra install commands such as copying over application icons and ensuring the `.desktop` file exists under the correct name";
+      default = false;
+      description = ''
+        Whether append extra post-install commands useful for desktop applications to `config.fhsenv.extraInstallCmds`.
+
+        This includes things like copying over `.desktop` files and application icons from the sandboxed
+        derivation over to the main derivation, so they can be picked up by desktop environments.
+      '';
     };
     package = lib.mkOption {
       type = lib.types.functionTo lib.types.package;
@@ -96,8 +99,14 @@ in
     };
   };
 
+  imports = [
+    (lib.mkRemovedOptionModule [ "fhsenv" "skipExtraInstallCmds" ] ''
+      This option has been replaced by `fhsenv.performDesktopPostInstall`, which has a more descriptive name and inverse behavior.
+    '')
+  ];
+
   config = lib.mkMerge [
-    (lib.mkIf (!cfg.skipExtraInstallCmds) {
+    (lib.mkIf cfg.performDesktopPostInstall {
       fhsenv.extraInstallCmds = ''
         # some fhsenv packages add these by default, but we want our own
         rm -rf $out/share/{applications,icons,pixmaps}
