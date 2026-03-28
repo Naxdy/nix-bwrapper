@@ -4,9 +4,17 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
-    nuschtosSearch.url = "github:NuschtOS/search";
+    nuschtosSearch = {
+      url = "github:NuschtOS/search";
 
-    treefmt-nix.url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
