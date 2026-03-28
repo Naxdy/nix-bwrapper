@@ -5,7 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
     nuschtosSearch = {
-      url = "github:NuschtOS/search";
+      url = "github:NuschtOS/search/v0.1.0";
 
       inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -44,8 +44,30 @@
             };
 
             treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
+
+            mdbook-admonish = pkgs.mdbook-admonish.overrideAttrs (old: {
+              patches = (old.patches or [ ]) ++ [
+                # mdbook 0.5 compatibility
+                (pkgs.fetchpatch2 {
+                  url = "https://github.com/tommilligan/mdbook-admonish/commit/f67dc47c24bc48dada3ae4decf055fdd6ba4a4ed.patch";
+                  hash = "sha256-xSEtwDXUiGYwALQKyz1kqqaeqmyG2gTD9BLX0NQSxt8=";
+                })
+              ];
+
+              cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
+                inherit (mdbook-admonish) src name patches;
+                hash = "sha256-FQo58eT9SyO5bhuoRQOAfBcAi1acBOPjYH6WUtiJPIE=";
+              };
+            });
           in
-          f { inherit pkgs system treefmtEval; }
+          f {
+            inherit
+              mdbook-admonish
+              pkgs
+              system
+              treefmtEval
+              ;
+          }
         );
     in
     {
@@ -72,6 +94,7 @@
               }).config.build.fhsenv;
 
             bwrapperPresets = bwrapperLib.presets;
+            bwrapperPresetsMeta = bwrapperLib.presets-meta;
           };
 
         forPkgs = pkgs: import ./modules { inherit pkgs nixpkgs; };
@@ -80,10 +103,17 @@
       formatter = forEachSupportedSystem ({ treefmtEval, ... }: treefmtEval.config.build.wrapper);
 
       devShells = forEachSupportedSystem (
-        { pkgs, treefmtEval, ... }:
+        {
+          mdbook-admonish,
+          pkgs,
+          treefmtEval,
+          ...
+        }:
         {
           default = pkgs.mkShell {
             nativeBuildInputs = [
+              pkgs.mdbook
+              mdbook-admonish
               treefmtEval.config.build.wrapper
             ];
           };
@@ -91,7 +121,12 @@
       );
 
       packages = forEachSupportedSystem (
-        { pkgs, system, ... }:
+        {
+          mdbook-admonish,
+          pkgs,
+          system,
+          ...
+        }:
         let
           bwrapperLib = self.lib.forPkgs pkgs;
         in
@@ -102,8 +137,28 @@
             optionsJSON = (self.lib.forPkgs pkgs).options-json + "/share/doc/nixos/options.json";
             urlPrefix = "https://github.com/Naxdy/nix-bwrapper/tree/main/";
             title = "Nix Bwrapper Options Search";
-            baseHref = "/nix-bwrapper/";
+            baseHref = "/nix-bwrapper/options-search/";
           };
+
+          docs = pkgs.callPackage ./docs {
+            inherit mdbook-admonish;
+            bwrapperVersion = "1.0.0";
+          };
+
+          gh-pages =
+            let
+              searchForGh = pkgs.runCommandLocal "search" { } ''
+                mkdir -p $out
+                ln -s ${self.packages.${system}.search} $out/options-search
+              '';
+            in
+            pkgs.symlinkJoin {
+              name = "nix-bwrapper-pages";
+              paths = [
+                searchForGh
+                self.packages.${system}.docs
+              ];
+            };
         }
       );
 
@@ -120,6 +175,7 @@
             mkBwrapper
             mkBwrapperFHSEnv
             bwrapperPresets
+            bwrapperPresetsMeta
             ;
 
           bwrapper = builtins.throw "`bwrapper` has been replaced by a unified module-based system available under `mkBwrapper`";

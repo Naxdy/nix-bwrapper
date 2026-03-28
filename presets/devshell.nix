@@ -30,7 +30,7 @@
       impact of potentially malicious dependencies / supply chain attacks.
 
       Confines any application to the current directory (at time of execution), and provides persistence within the sandbox
-      for a number of commonly used directores (e.g. `$HOME/.cache`).
+      for a number of commonly used directories (e.g. `$HOME/.cache`).
     '';
   };
 }

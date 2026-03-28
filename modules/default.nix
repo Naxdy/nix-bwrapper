@@ -97,6 +97,7 @@ let
       value = {
         inherit (instance) meta;
         module = f;
+        path = ../presets/${name};
       };
     }
   ) (builtins.readDir ../presets);
@@ -113,5 +114,5 @@ in
 
   presets = lib.mapAttrs (_: v: v.module) presets;
 
-  presets-meta = lib.mapAttrs (_: v: v.meta) presets;
+  presets-meta = presets;
 }
