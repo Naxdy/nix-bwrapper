@@ -150,11 +150,11 @@
           });
 
           bottles-wrapped = pkgs.bottles.override {
-            imports = [
-              pkgs.bwrapperPresets.desktop
-            ];
             # need to override it like this because `pkgs.bottles` is a `symlinkJoin`
             buildFHSEnv = pkgs.mkBwrapperFHSEnv {
+              imports = [
+                pkgs.bwrapperPresets.desktop
+              ];
               app = {
                 package-unwrapped = pkgs.bottles-unwrapped;
                 id = "com.usebottles.bottles";
