@@ -2,7 +2,7 @@
 {
   config = {
     mounts = {
-      write = [
+      readWrite = [
         "$PWD"
       ];
 
