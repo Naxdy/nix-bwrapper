@@ -1,5 +1,11 @@
 # Packaging Applications
 
+Packaging applications is easiest if your application exists as a flatpak. In this case, you can simply import the
+flatpak manifest into `config.flatpak.manifestFile` and have Nix-Bwrapper handle most (if not all) of the necessary
+configuration for you.
+
+When doing this, you can of course still add / revoke additional permissions using the module system as necessary.
+
 ## Your application has a flatpak manifest
 
 If the application has a Flatpak manifest (either `.json` or `.yaml`/`.yml`), you can pre-fill most of bwrapper's
@@ -51,6 +57,8 @@ At the moment, bwrapper supports pre-filling options for the following:
 - `mounts.sandbox`
 - `dbus.{session,system}.{talks,owns,calls}`
 
+### Inspecing & overriding options
+
 If you want to see exactly what the final config will be, you can use `bwrapperEval` and inspect the resulting `config`
 attribute, for example:
 
@@ -93,6 +101,29 @@ For example, running `nix eval .#my-librewolf-config.app --json` could produce s
   "package-unwrapped": null,
   "renameDesktopFile": true,
   "runScript": "librewolf"
+}
+```
+
+If you then decide, for example, that you want to change the app id, or add an additional environment variable, you can
+do this as follows:
+
+```nix
+{
+  packages.my-librewolf-config = (pkgs.bwrapperEval {
+    imports = [ pkgs.bwrapperPresets.desktop ];
+    flatpak.manifestFile = pkgs.fetchurl {
+      url = "https://github.com/flathub/io.gitlab.librewolf-community/raw/refs/heads/master/io.gitlab.librewolf-community.json";
+      hash = "...";
+    };
+    app = {
+      # will completely override the app id from the manifest
+      id = pkgs.lib.mkForce "my-custom-id";
+      env = {
+        # will be merged with the env vars from the manifest file
+        MY_CUSTOM_ENV_VAR = "example";
+      };
+    };
+  }).config;
 }
 ```
 
