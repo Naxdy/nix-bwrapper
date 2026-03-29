@@ -120,7 +120,9 @@ in
         if config.app.renameDesktopFile then
           ''
             test $(ls ${config.app.package}/share/applications/*.desktop | wc -l) -eq 1 || \
-              (echo "You have chosen to automatically rename ${config.app.bwrapPath}'s desktop file, but there is more than 1. You will have to manually specify the appId using config.app.id instead (it should match the desktop file)" && exit 1)
+              (echo "You have chosen to automatically rename ${config.app.bwrapPath}'s desktop file,"; \
+              echo "but there is more than 1. You will have to manually specify the appId using config.app.id"; \
+              echo "instead (it should match the name of the desktop file) and set 'config.app.renameDesktopFile' to 'false'."; exit 1)
 
             cp ${config.app.package}/share/applications/*.desktop $out/share/applications/${config.app.id}.desktop
           ''
