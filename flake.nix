@@ -194,8 +194,15 @@
         };
 
       checks = forEachSupportedSystem (
-        { pkgs, treefmtEval, ... }:
         {
+          pkgs,
+          treefmtEval,
+          system,
+          ...
+        }:
+        {
+          inherit (self.packages.${system}) gh-pages docs;
+
           formatting = treefmtEval.config.build.check self;
 
           # note that `pkgs` already includes the overlay we need
