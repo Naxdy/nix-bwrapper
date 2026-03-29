@@ -42,6 +42,25 @@
       packages = forAllSystems (
         { pkgs, ... }:
         {
+          # Can be used for a dev environment
+          zsh-wrapped = pkgs.mkBwrapper {
+            app = {
+              package = pkgs.zsh;
+            };
+            imports = [ pkgs.bwrapperPresets.devshell ];
+            mounts.readWrite = [
+              "$HOME/.zshrc"
+              "$HOME/.p10k.zsh"
+              "$HOME/.zshrc.zni"
+              "$HOME/.oh-my-zsh"
+
+              # Note that you may not want this, depending on what is
+              # contained in your history!
+              "$HOME/.zsh_history"
+            ];
+          };
+
+          # Or, just sandbox a single AI agent
           opencode-wrapped = pkgs.mkBwrapper {
             app = {
               package = pkgs.opencode;
