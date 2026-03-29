@@ -232,5 +232,29 @@
           };
         }
       );
+
+      devShells = forAllSystems (
+        { pkgs, system, ... }:
+        {
+          default =
+            (pkgs.mkBwrapper {
+              app = {
+                package = pkgs.zsh;
+                isFhsenv = false;
+              };
+              imports = [ pkgs.bwrapperPresets.devshell ];
+              mounts.readWrite = [
+                "$HOME/.zshrc"
+                "$HOME/.p10k.zsh"
+                "$HOME/.zshrc.zni"
+                "$HOME/.oh-my-zsh"
+
+                # Note that you may not want this, depending on what is
+                # contained in your history!
+                "$HOME/.zsh_history"
+              ];
+            }).env;
+        }
+      );
     };
 }
