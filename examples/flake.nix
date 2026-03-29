@@ -42,6 +42,21 @@
       packages = forAllSystems (
         { pkgs, ... }:
         {
+          opencode-wrapped = pkgs.mkBwrapper {
+            app = {
+              package = pkgs.opencode;
+              runScript = "opencode";
+            };
+            imports = [
+              pkgs.bwrapperPresets.devshell
+            ];
+            mounts.readWrite = [
+              "$HOME/.config/opencode"
+              "$HOME/.local/share/opencode"
+              "$HOME/.local/state/opencode"
+            ];
+          };
+
           librewolf-wrapped = pkgs.mkBwrapper {
             imports = [
               pkgs.bwrapperPresets.desktop
