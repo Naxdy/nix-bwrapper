@@ -147,6 +147,7 @@ in
         "--ro-bind-try /run/booted-system /run/booted-system"
         "--ro-bind-try /run/opengl-driver /run/opengl-driver"
         "--ro-bind-try /run/opengl-driver-32 /run/opengl-driver-32"
+        "--ro-bind-try /run/systemd/resolve/stub-resolv.conf /run/systemd/resolve/stub-resolv.conf"
         "--bind \"$XDG_RUNTIME_DIR/doc/by-app/${config.app.id}\" \"$XDG_RUNTIME_DIR/doc\""
       ]
       ++ (lib.unique (
