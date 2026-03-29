@@ -1,6 +1,13 @@
-{ ... }:
+{ lib, ... }:
+let
+  inherit (lib) mkDefault;
+in
 {
   config = {
+    fhsenv.opts = {
+      unshareNet = mkDefault false;
+    };
+
     mounts = {
       readWrite = [
         "$PWD"

@@ -56,17 +56,17 @@ in
       unshareUser = lib.mkOption {
         type = lib.types.bool;
         description = "Create a new user namespace";
-        default = false;
+        default = true;
       };
       unshareUts = lib.mkOption {
         type = lib.types.bool;
         description = "Create a new uts namespace";
-        default = false;
+        default = true;
       };
       unshareCgroup = lib.mkOption {
         type = lib.types.bool;
         description = "Create a new cgroup namespace";
-        default = false;
+        default = true;
       };
       unsharePid = lib.mkOption {
         type = lib.types.bool;
@@ -76,7 +76,7 @@ in
       unshareNet = lib.mkOption {
         type = lib.types.bool;
         description = "Create a new network namespace";
-        default = false;
+        default = true;
       };
       unshareIpc = lib.mkOption {
         type = lib.types.bool;

@@ -45,7 +45,6 @@
           opencode-wrapped = pkgs.mkBwrapper {
             app = {
               package = pkgs.opencode;
-              runScript = "opencode";
             };
             imports = [
               pkgs.bwrapperPresets.devshell

@@ -51,7 +51,15 @@ in
 
     flatpak.enable = mkDefault true;
 
-    fhsenv.performDesktopPostInstall = mkDefault (!config.app.isFhsenv);
+    fhsenv = {
+      performDesktopPostInstall = mkDefault (!config.app.isFhsenv);
+      opts = {
+        unshareUser = mkDefault false;
+        unshareUts = mkDefault false;
+        unshareCgroup = mkDefault false;
+        unshareNet = mkDefault false;
+      };
+    };
 
     mounts = {
       read = [
