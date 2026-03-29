@@ -23,6 +23,9 @@ in
       description = ''
         Paths to be mounted read-write within the sandbox. Supports environment
         variables like `$HOME`.
+
+        If the path doesn't exist, a corresponding directory will be created at
+        the specified location.
       '';
       default = [ ];
     };
@@ -63,7 +66,7 @@ in
         ))
         + "\n"
         + (builtins.concatStringsSep "\n" (
-          map (e: ''test -d "${e}" || mkdir -p "${e}"'') (lib.unique cfg.readWrite)
+          map (e: ''(test -d "${e}" || test -f "${e}") || mkdir -p "${e}"'') (lib.unique cfg.readWrite)
         ));
 
       fhsenv.bwrap.additionalArgs =
