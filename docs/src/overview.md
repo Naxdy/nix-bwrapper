@@ -6,10 +6,11 @@ portals support. To do this, bwrapper leverages NixOS' built-in `buildFHSEnv` wr
 Key features:
 
 - fully declarative & composable configuration of app permissions
-- supports config presets by ways of nixpkgs' module system
+- supports config presets by way of nixpkgs' module system
   - Nix-Bwrapper also comes with a couple presets out of the box to help get you started
 - can pre-configure entire applications based on their Flatpak manifest file
 - properly sandbox X11 apps via `xwayland-satellite` in such a way that they cannot even spy on other X11 apps
+- full interoparability with portals, e.g. to selectively read / save files outside the sandbox
 
 For a list of all available options and their functionality, refer to our
 [option search](https://naxdy.github.io/nix-bwrapper/options-search/).
