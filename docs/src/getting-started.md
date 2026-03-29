@@ -16,6 +16,8 @@ the following:
 > ```
 ````
 
+## Packages
+
 Import this flake like you would any other. It provides an overlay, which in turn provides the `mkBwrapper` and
 `mkBwrapperFHSEnv` functions.
 
@@ -119,3 +121,36 @@ Packages using `buildFHSEnv` in a custom manner can also be wrapped, by using `m
 
 See `examples/flake.nix` for more complete use cases. Note that they are only intended as examples, and may not be
 (fully) usable as-is.
+
+## DevShells
+
+You can also use `mkBwrapper` to declare a sandboxed `devShell` in your flake:
+
+```nix
+{
+  devShells.zsh =
+    (pkgs.mkBwrapper {
+      app = {
+        package = pkgs.zsh;
+        # Your dev dependencies & tools go here
+        addPkgs = [
+          pkgs.gron
+        ];
+      };
+      imports = [ pkgs.bwrapperPresets.devshell ];
+      mounts.readWrite = [
+        "$HOME/.zshrc"
+        "$HOME/.p10k.zsh"
+        "$HOME/.zshrc.zni"
+        "$HOME/.oh-my-zsh"
+
+        # Note that you may not want this, depending on what is
+        # contained in your history!
+        "$HOME/.zsh_history"
+      ];
+    }).env;
+}
+```
+
+Then, you can enter the sandboxed dev environment as you would normally, using `nix develop .#`, or using tools like
+`direnv`. Additional dependencies and tools can be declared under `config.app.addPkgs`.

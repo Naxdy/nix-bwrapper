@@ -241,6 +241,10 @@
               app = {
                 package = pkgs.zsh;
                 isFhsenv = false;
+                # Your dev dependencies & tools go here
+                addPkgs = [
+                  pkgs.gron
+                ];
               };
               imports = [ pkgs.bwrapperPresets.devshell ];
               mounts.readWrite = [
