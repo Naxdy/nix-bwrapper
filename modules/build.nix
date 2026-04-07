@@ -111,18 +111,33 @@ in
         )
       );
 
-    build.package = assertWarn (
-      if config.app.isFhsenv then
-        (config.app.package.override {
-          buildFHSEnv = config.build.fhsenv;
-        })
-      else
-        (config.fhsenv.package (
-          (fhsEnvArgs { })
+    build.package =
+      let
+        mkPackage =
+          appPkg:
+          let
+            wrapped = assertWarn (
+              if config.app.isFhsenv then
+                (appPkg.override {
+                  buildFHSEnv = config.build.fhsenv;
+                })
+              else
+                (config.fhsenv.package (
+                  (fhsEnvArgs {
+                    pkg = appPkg;
+                  })
+                  // {
+                    inherit (appPkg) pname version meta;
+                  }
+                ))
+            );
+          in
+          wrapped
           // {
-            inherit (config.app.package) pname version meta;
-          }
-        ))
-    );
+            override = args: mkPackage (appPkg.override args);
+            overrideAttrs = f: mkPackage (appPkg.overrideAttrs f);
+          };
+      in
+      mkPackage config.app.package;
   };
 }
