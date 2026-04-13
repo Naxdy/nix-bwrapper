@@ -72,8 +72,8 @@ nixosConfigurations.myMachine = nixpkgs.lib.nixosSystem {
     ({ pkgs, ... }: {
       environment.systemPackages = [
         (pkgs.mkBwrapper {
+          imports = [ pkgs.bwrapperPresets.desktop ];
           app = {
-            imports = [ pkgs.bwrapperPresets.desktop ];
             package = pkgs.discord;
           };
           # ...
