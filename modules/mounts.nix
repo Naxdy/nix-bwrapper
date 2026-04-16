@@ -1,6 +1,30 @@
 { config, lib, ... }:
 let
   cfg = config.mounts;
+  mountPairType = lib.types.submodule {
+    options = {
+      from = lib.mkOption {
+        type = lib.types.str;
+        description = "Path on the host system.";
+      };
+      to = lib.mkOption {
+        type = lib.types.str;
+        description = "Path to mount within the sandbox.";
+      };
+    };
+  };
+  mountsType = lib.types.listOf (
+    lib.types.coercedTo (lib.types.either lib.types.str mountPairType) (
+      m:
+      if builtins.isString m then
+        {
+          from = m;
+          to = m;
+        }
+      else
+        m
+    ) mountPairType
+  );
 in
 {
   options.mounts = {
@@ -10,7 +34,7 @@ in
       default = true;
     };
     read = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
+      type = mountsType;
       description = ''
         Paths to be mounted read-only within the sandbox. Supports environment
         variables like `$HOME`. The default includes common paths needed for
@@ -19,7 +43,7 @@ in
       default = [ ];
     };
     readWrite = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
+      type = mountsType;
       description = ''
         Paths to be mounted read-write within the sandbox. Supports environment
         variables like `$HOME`.
@@ -66,15 +90,17 @@ in
         ))
         + "\n"
         + (builtins.concatStringsSep "\n" (
-          map (e: ''(test -d "${e}" || test -f "${e}") || mkdir -p "${e}"'') (lib.unique cfg.readWrite)
+          map (e: ''(test -d "${e.from}" || test -f "${e.from}") || mkdir -p "${e.from}"'') (
+            lib.unique cfg.readWrite
+          )
         ));
 
       fhsenv.bwrap.additionalArgs =
         (map (e: ''--bind "$HOME/.bwrapper/${config.app.bwrapPath}/${e.name}" "${e.path}"'') (
           lib.unique cfg.sandbox
         ))
-        ++ (map (e: "--ro-bind-try \"${e}\" \"${e}\"") (lib.unique cfg.read))
-        ++ (map (e: "--bind \"${e}\" \"${e}\"") (lib.unique cfg.readWrite));
+        ++ (map (e: "--ro-bind-try \"${e.from}\" \"${e.to}\"") (lib.unique cfg.read))
+        ++ (map (e: "--bind \"${e.from}\" \"${e.to}\"") (lib.unique cfg.readWrite));
     }
     (lib.mkIf cfg.privateTmp {
       script.preCmds.stage1 = ''

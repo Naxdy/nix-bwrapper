@@ -21,9 +21,17 @@ let
     flatpak.enable = false;
     dbus.enable = false;
 
-    mounts.readWrite = [
-      "/home/alice/Shared"
-    ];
+    mounts = {
+      readWrite = [
+        "/home/alice/Shared"
+      ];
+      read = [
+        {
+          from = "/home/alice/ROShared";
+          to = "/home/alice/nested/ROShared";
+        }
+      ];
+    };
 
     sockets = {
       wayland = true;
@@ -41,7 +49,7 @@ pkgs.testers.runNixOSTest {
 
   nodes = {
     machine =
-      { config, pkgs, ... }:
+      { pkgs, ... }:
       {
         imports = [
           "${nixpkgs}/nixos/tests/common/wayland-cage.nix"
@@ -50,7 +58,8 @@ pkgs.testers.runNixOSTest {
         systemd.services.prepareDirs = {
           wantedBy = [ "multi-user.target" ];
           script = ''
-            mkdir -p /home/alice/{Secret,Shared}
+            mkdir -p /home/alice/{Secret,Shared,ROShared}
+            echo "bar" >> /home/alice/ROShared/foo
             chown -R alice /home/alice
           '';
         };
@@ -88,6 +97,7 @@ pkgs.testers.runNixOSTest {
       machine.wait_for_text("grass touched", 10)
       machine.send_chars("echo hard >> ~/Shared/grass\n", 0.25)
       machine.succeed(ru("cat /home/alice/Shared/grass | grep hard"))
+      machine.succeed(ru("cat /home/alice/nested/ROShared/foo | grep bar"))
 
       # confirm we cannot read secret file
       machine.send_chars("cat ~/Secret/grass\n", 0.25)
