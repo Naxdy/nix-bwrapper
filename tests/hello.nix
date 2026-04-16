@@ -1,5 +1,5 @@
-{ pkgs, ... }:
-pkgs.testers.runNixOSTest {
+{ testers }:
+testers.runNixOSTest {
   name = "nix-bwrapper-hello";
   nodes = {
     machine =
@@ -16,9 +16,11 @@ pkgs.testers.runNixOSTest {
       };
   };
 
-  testScript = ''
-    machine.wait_for_unit("default.target")
+  testScript =
+    # python
+    ''
+      machine.wait_for_unit("default.target")
 
-    machine.succeed("hello")
-  '';
+      machine.succeed("hello")
+    '';
 }

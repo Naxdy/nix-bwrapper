@@ -207,9 +207,9 @@
 
           # note that `pkgs` already includes the overlay we need
 
-          hello-bwrapper = import ./tests/hello.nix {
-            inherit pkgs;
-          };
+          hello-bwrapper = pkgs.callPackage ./tests/hello.nix { };
+
+          hello-bwrapper-override = pkgs.callPackage ./tests/hello-override.nix { };
         }
       );
     };
