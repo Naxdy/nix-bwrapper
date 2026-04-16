@@ -142,7 +142,7 @@
 
           docs = pkgs.callPackage ./docs {
             inherit mdbook-admonish;
-            bwrapperVersion = "1.0.0";
+            bwrapperVersion = "1.1.0";
           };
 
           gh-pages =
