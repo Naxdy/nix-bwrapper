@@ -37,8 +37,10 @@ in
       type = mountsType;
       description = ''
         Paths to be mounted read-only within the sandbox. Supports environment
-        variables like `$HOME`. The default includes common paths needed for
-        theming to function in most apps.
+        variables like `$HOME`.
+
+        List entries may either be paths, or a mapping of a host path to a
+        different path within the sandbox.
       '';
       default = [ ];
     };
@@ -48,8 +50,11 @@ in
         Paths to be mounted read-write within the sandbox. Supports environment
         variables like `$HOME`.
 
-        If the path doesn't exist, a corresponding directory will be created at
-        the specified location.
+        If the path to be mounteddoesn't exist in the host system, a corresponding
+        directory will be created at the specified location.
+
+        List entries may either be paths, or a mapping of a host path to a
+        different path within the sandbox.
       '';
       default = [ ];
     };
