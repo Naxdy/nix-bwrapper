@@ -50,7 +50,7 @@ in
         Paths to be mounted read-write within the sandbox. Supports environment
         variables like `$HOME`.
 
-        If the path to be mounteddoesn't exist in the host system, a corresponding
+        If the path to be mounted doesn't exist in the host system, a corresponding
         directory will be created at the specified location.
 
         List entries may either be paths, or a mapping of a host path to a
