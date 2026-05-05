@@ -64,7 +64,7 @@ in
       };
 
       fhsenv.bwrap.additionalArgs = [
-        "\"$\{wayland_binds[@]\}\""
+        ''"''${wayland_binds[@]}"''
       ];
     })
     (lib.mkIf cfg.pipewire {
@@ -78,7 +78,7 @@ in
       '';
 
       fhsenv.bwrap.additionalArgs = [
-        "\"$\{pipewire_binds[@]\}\""
+        ''"''${pipewire_binds[@]}"''
       ];
     })
     (lib.mkIf cfg.x11 {
