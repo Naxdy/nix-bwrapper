@@ -160,7 +160,6 @@ let
       initArgs ? "",
     }:
     ''
-      ignored=(/nix /dev /proc /etc /mnt ${optionalString privateTmp "/tmp"})
       ro_mounts=()
       symlinks=()
       etc_ignored=()
@@ -174,10 +173,8 @@ let
           :
         elif [[ -L $i ]]; then
           symlinks+=(--symlink "$(${coreutils}/bin/readlink "$i")" "$path")
-          ignored+=("$path")
         else
           ro_mounts+=(--ro-bind "$i" "$path")
-          ignored+=("$path")
         fi
       done
 
@@ -213,16 +210,6 @@ let
         fi
         if [[ -e $i ]]; then
           symlinks+=(--symlink "/.host-etc/''${i#/etc/}" "$i")
-        fi
-      done
-
-      declare -a auto_mounts
-      # loop through all directories in the root
-      for dir in /*; do
-        # if it is a directory and it is not ignored
-        if [[ -d "$dir" ]] && [[ ! "''${ignored[@]}" =~ "$dir" ]]; then
-          # add it to the mount list
-          auto_mounts+=(--bind "$dir" "$dir")
         fi
       done
 
@@ -264,7 +251,6 @@ let
     + ''
         "''${ro_mounts[@]}"
         "''${symlinks[@]}"
-        "''${auto_mounts[@]}"
         ${concatStringsSep "\n  " extraBwrapArgs}
         ${init runScript} ${initArgs}
       )
