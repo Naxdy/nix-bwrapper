@@ -63,6 +63,7 @@ in
 
     mounts = {
       read = [
+        "/sys"
         "$HOME/.icons"
         "$HOME/.fonts"
         "$HOME/.themes"
