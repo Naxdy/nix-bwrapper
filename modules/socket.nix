@@ -41,12 +41,28 @@ in
 
   config = lib.mkMerge [
     (lib.mkIf cfg.pulseaudio {
-      runtime.binds = [
-        "pulse"
-      ];
+      script.preCmds.stage3 = ''
+        declare -a pulseaudio_binds
+
+        pulse_socket="$XDG_RUNTIME_DIR/pulse/native"
+
+        if [[ -S "$pulse_socket" ]]; then
+          exec {pulse_config_fd}<<<'enable-shm=no'
+
+          pulseaudio_binds=(
+            --dir /run/flatpak
+            --dir /run/flatpak/pulse
+            --ro-bind "$pulse_socket" /run/flatpak/pulse/native
+            --ro-bind-data "$pulse_config_fd" /run/flatpak/pulse/config
+            --symlink ../../flatpak/pulse "$XDG_RUNTIME_DIR/pulse"
+            --setenv PULSE_SERVER unix:/run/flatpak/pulse/native
+            --setenv PULSE_CLIENTCONFIG /run/flatpak/pulse/config
+          )
+        fi
+      '';
 
       fhsenv.bwrap.additionalArgs = [
-        ''--ro-bind-try "$XDG_RUNTIME_DIR/pulse" "$XDG_RUNTIME_DIR/pulse"''
+        ''"''${pulseaudio_binds[@]}"''
       ];
     })
     (lib.mkIf cfg.wayland {
