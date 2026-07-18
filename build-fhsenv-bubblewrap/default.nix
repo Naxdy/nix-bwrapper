@@ -8,6 +8,7 @@
   pkgsi686Linux,
   coreutils,
   bubblewrap,
+  libseccomp,
   nixpkgs,
 }:
 
@@ -78,6 +79,21 @@ let
       "privateTmp"
     ]
   );
+
+  # Seccomp BPF filter that replaces --new-session as the CVE-2017-5226
+  # mitigation. The sandbox keeps its controlling terminal (receiving
+  # SIGWINCH on resize) while TIOCSTI keystroke injection and other
+  # dangerous syscalls are blocked. Ported from Flatpak's setup_seccomp.
+  seccompFilter =
+    runCommandLocal "${name}-seccomp-bpf"
+      {
+        nativeBuildInputs = [ libseccomp ];
+      }
+      ''
+        ${stdenv.cc}/bin/cc -O2 -I${libseccomp.dev}/include -o setup-seccomp ${./setup-seccomp.c} \
+          -L${libseccomp.lib}/lib -Wl,-rpath,${libseccomp.lib}/lib -lseccomp
+        ./setup-seccomp ${optionalString fhsenv.isMultiBuild "--multiarch"} > $out
+      '';
 
   etcBindEntries =
     let
@@ -252,9 +268,10 @@ let
         "''${ro_mounts[@]}"
         "''${symlinks[@]}"
         ${concatStringsSep "\n  " extraBwrapArgs}
+        --seccomp 3
         ${init runScript} ${initArgs}
       )
-      "''${cmd[@]}"
+      "''${cmd[@]}" 3< ${seccompFilter}
     '';
 
   bin = writeShellScript "${name}-bwrap" (bwrapCmd {

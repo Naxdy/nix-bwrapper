@@ -116,6 +116,10 @@
               mdbook-admonish
               treefmtEval.config.build.wrapper
             ];
+
+            buildInputs = [
+              pkgs.libseccomp
+            ];
           };
         }
       );
@@ -210,6 +214,8 @@
           hello-bwrapper = pkgs.callPackage ./tests/hello.nix { };
 
           hello-bwrapper-override = pkgs.callPackage ./tests/hello-override.nix { };
+
+          seccomp = pkgs.callPackage ./tests/seccomp.nix { };
         }
       );
     };

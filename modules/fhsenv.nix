@@ -139,7 +139,6 @@ in
       fhsenv.package = pkgs.callPackage ../build-fhsenv-bubblewrap { inherit nixpkgs; };
 
       fhsenv.bwrap.baseArgs = [
-        "--new-session"
         "--tmpfs /home"
         "--tmpfs /mnt"
         "--tmpfs /run"
