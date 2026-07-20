@@ -2,17 +2,15 @@
   description = "A user-friendly method of sandboxing applications using bubblewrap with portals support.";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1.*";
 
     nuschtosSearch = {
       url = "github:NuschtOS/search/v0.1.0";
-
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     treefmt-nix = {
-      url = "github:numtide/treefmt-nix";
-
+      url = "https://flakehub.com/f/numtide/treefmt-nix/*";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
