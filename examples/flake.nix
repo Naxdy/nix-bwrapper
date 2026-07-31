@@ -97,6 +97,8 @@
               package = pkgs.brave;
               runScript = "brave";
             };
+            # Chromium's internal sandbox needs to create nested namespaces.
+            fhsenv.opts.allowNestedUserNamespaces = true;
           };
 
           lutris-wrapped = pkgs.mkBwrapper ({
@@ -180,6 +182,8 @@
                 pkgs.libdbusmenu
               ];
             };
+            # Electron's internal sandbox needs to create nested namespaces.
+            fhsenv.opts.allowNestedUserNamespaces = true;
             mounts.readWrite = [
               "$HOME/Downloads"
             ];
@@ -211,6 +215,8 @@
                 ELECTRON_TRASH = "gio";
               };
             };
+            # Electron's internal sandbox needs to create nested namespaces.
+            fhsenv.opts.allowNestedUserNamespaces = true;
             mounts.readWrite = [
               "$XDG_RUNTIME_DIR/app/com.discordapp.Discord"
               "$XDG_RUNTIME_DIR/speech-dispatcher"
