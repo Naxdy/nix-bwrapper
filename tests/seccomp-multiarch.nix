@@ -40,6 +40,34 @@ let
         ];
       }
       ''
+        # --- Byte patterns we look for in the exported cBPF program. ---
+        # The BPF is a stream of 8-byte struct sock_filter entries; all of the
+        # following u32 constants appear little-endian, so the file bytes are
+        # the reverse of the value's hex spelling (e.g. 0xc000003e -> 3e 00 00 c0).
+
+        # AUDIT_ARCH_X86_64 = 0xc000003e (bytes 3e 00 00 c0).
+        # A seccomp program dispatches on seccomp_data.arch; a jeq against this
+        # value selects the x86_64 syscall table. Present in every x86_64 filter.
+        x86_64_arch_hex=3e0000c0
+
+        # AUDIT_ARCH_I386 = 0x40000003 (bytes 03 00 00 40).
+        # The 32-bit x86 syscall table. Only present when --multiarch ran
+        # seccomp_arch_add(SCMP_ARCH_X86); its presence proves the filter is
+        # genuinely dual-arch.
+        i386_arch_hex=03000040
+
+        # SCMP_ACT_ERRNO(EAFNOSUPPORT) = 0x00050061 (bytes 61 00 05 00).
+        # The `ret` instruction that terminates the socket-family-blocked
+        # branch (EAFNOSUPPORT = 97). Present in single-arch filters; dropped
+        # in multiarch because exact socket-family rules cannot be represented
+        # across arches (the documented tradeoff of the fix).
+        eafnosupport_hex=61000500
+
+        # hexify FILE prints the file as one contiguous lowercase hex string.
+        hexify() { od -A n -t x1 "$1" | tr -d ' \n'; }
+        # has_hex FILE HEX succeeds if the hex pattern appears in the file.
+        has_hex() { hexify "$1" | grep -q "$2"; }
+
         # Compile setup-seccomp.c exactly like the production derivation
         # (build-fhsenv-bubblewrap/default.nix).
         ${pkgs.stdenv.cc}/bin/cc -O2 -I${pkgs.libseccomp.dev}/include \
@@ -53,12 +81,11 @@ let
         test $(( $(stat -c %s bpf-single.bin) % 8 )) -eq 0
         ! grep -q "setup-seccomp: error" stderr-single.txt
         ! grep -q "multi-arch filters do not support exact rules" stderr-single.txt
-        # AUDIT_ARCH_X86_64 (0xc000003e) present, AUDIT_ARCH_I386 (0x40000003) absent.
-        od -A n -t x1 bpf-single.bin | tr -d ' \n' | grep -q 3e0000c0
-        ! od -A n -t x1 bpf-single.bin | tr -d ' \n' | grep -q 03000040
-        # Socket-family allowlist rule (SCMP_ACT_ERRNO(EAFNOSUPPORT) = 0x00050061,
-        # bytes 61 00 05 00 in the little-endian BPF) must be present.
-        od -A n -t x1 bpf-single.bin | tr -d ' \n' | grep -q 61000500
+        # x86_64 dispatch present, i386 dispatch absent (single-arch).
+        has_hex bpf-single.bin "$x86_64_arch_hex"
+        ! has_hex bpf-single.bin "$i386_arch_hex"
+        # Socket-family allowlist rule must be present.
+        has_hex bpf-single.bin "$eafnosupport_hex"
 
         # --- Multiarch filter: builds, spans both arches, drops socket-family
         # exact rules with a warning (pre-fix this hard-failed with -EOPNOTSUPP). ---
@@ -67,11 +94,11 @@ let
         test $(( $(stat -c %s bpf-multi.bin) % 8 )) -eq 0
         ! grep -q "setup-seccomp: error" stderr-multi.txt
         grep -q "multi-arch filters do not support exact rules" stderr-multi.txt
-        od -A n -t x1 bpf-multi.bin | tr -d ' \n' | grep -q 3e0000c0
-        od -A n -t x1 bpf-multi.bin | tr -d ' \n' | grep -q 03000040
-        # Documented tradeoff: exact socket-family rules cannot be represented
-        # across arches, so the EAFNOSUPPORT rule must be absent here.
-        ! od -A n -t x1 bpf-multi.bin | tr -d ' \n' | grep -q 61000500
+        # Both dispatches present -> the filter spans x86_64 and i386.
+        has_hex bpf-multi.bin "$x86_64_arch_hex"
+        has_hex bpf-multi.bin "$i386_arch_hex"
+        # Documented tradeoff: the socket-family rule must be absent here.
+        ! has_hex bpf-multi.bin "$eafnosupport_hex"
 
         # Keep the wrapped multilib env as an input so the bwrapper integration
         # path stays covered by this check.
