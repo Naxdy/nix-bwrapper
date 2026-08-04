@@ -94,6 +94,22 @@ static int block_socket_family_eq(scmp_filter_ctx ctx, int family) {
                     "arches, skipping\n");
     return 0;
   }
+  if (r == -EOPNOTSUPP) {
+    /* seccomp_rule_add_exact refuses *any* rule once the filter spans more
+     * than one architecture (libseccomp src/api.c: `col->filter_cnt > 1`
+     * returns -EOPNOTSUPP). This happens for multilib FHS environments
+     * (multiArch = true on x86_64), e.g. lutris. Dropping the socket-family
+     * restriction here is intentional: it mirrors Flatpak's setup_seccomp(),
+     * which ignores socket filtering failures on architectures where it is
+     * not representable. The syscall blocklist above still applies, so only
+     * the socket-family allowlist is lost in multiarch sandboxes. */
+    fprintf(stderr,
+            "setup-seccomp: warning: socket family %d cannot be blocked across "
+            "all arches (multi-arch filters do not support exact rules), "
+            "skipping\n",
+            family);
+    return 0;
+  }
   if (r < 0) {
     fprintf(stderr,
             "setup-seccomp: error: failed to block socket family %d: %d\n",
@@ -110,6 +126,17 @@ static int block_socket_family_ge(scmp_filter_ctx ctx, int family) {
   if (r == -EFAULT) {
     fprintf(stderr, "setup-seccomp: warning: socket syscall not known for all "
                     "arches, skipping\n");
+    return 0;
+  }
+  if (r == -EOPNOTSUPP) {
+    /* See block_socket_family_eq: exact socket-family rules cannot be
+     * represented when the filter spans multiple architectures (multilib
+     * FHS envs). Skip, same tradeoff as Flatpak's setup_seccomp(). */
+    fprintf(stderr,
+            "setup-seccomp: warning: socket families >= %d cannot be blocked "
+            "across all arches (multi-arch filters do not support exact "
+            "rules), skipping\n",
+            family);
     return 0;
   }
   if (r < 0) {
