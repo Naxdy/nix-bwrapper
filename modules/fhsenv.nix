@@ -96,6 +96,19 @@ in
         '';
         default = true;
       };
+      allowNestedUserNamespaces = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Allow the sandboxed application to create a nested user namespace.
+          This is required by applications such as Chromium and Electron that
+          set up their own process sandbox.
+
+          Enabling this permits `clone(CLONE_NEWUSER)`,
+          `unshare(CLONE_NEWUSER)`, and `chroot`. All other seccomp rules,
+          including the terminal ioctl protections, remain active.
+        '';
+      };
     };
   };
 

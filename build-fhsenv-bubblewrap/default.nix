@@ -28,6 +28,7 @@
   unshareCgroup ? false,
   privateTmp ? false,
   dieWithParent ? true,
+  allowNestedUserNamespaces ? false,
   ...
 }@args:
 
@@ -77,6 +78,7 @@ let
       "unsharePid"
       "unshareIpc"
       "privateTmp"
+      "allowNestedUserNamespaces"
     ]
   );
 
@@ -92,7 +94,10 @@ let
       ''
         ${stdenv.cc}/bin/cc -O2 -I${libseccomp.dev}/include -o setup-seccomp ${./setup-seccomp.c} \
           -L${libseccomp.lib}/lib -Wl,-rpath,${libseccomp.lib}/lib -lseccomp
-        ./setup-seccomp ${optionalString fhsenv.isMultiBuild "--multiarch"} > $out
+        ./setup-seccomp \
+          ${optionalString fhsenv.isMultiBuild "--multiarch"} \
+          ${optionalString allowNestedUserNamespaces "--allow-user-namespaces"} \
+          > $out
       '';
 
   etcBindEntries =
