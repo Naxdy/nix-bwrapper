@@ -11,6 +11,7 @@
  * https://github.com/flatpak/flatpak/blob/main/common/flatpak-run.c
  *
  * Usage: setup-seccomp [--multiarch] [--allow-can] [--allow-bluetooth]
+ *                      [--allow-user-namespaces]
  * Outputs a compiled cBPF program to stdout (for bwrap --seccomp FD).
  */
 // NOLINTBEGIN(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
@@ -152,6 +153,7 @@ int main(int argc, char *argv[]) {
   int multiarch = 0;
   int allow_can = 0;
   int allow_bluetooth = 0;
+  int allow_user_namespaces = 0;
 
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--multiarch") == 0)
@@ -160,6 +162,8 @@ int main(int argc, char *argv[]) {
       allow_can = 1;
     else if (strcmp(argv[i], "--allow-bluetooth") == 0)
       allow_bluetooth = 1;
+    else if (strcmp(argv[i], "--allow-user-namespaces") == 0)
+      allow_user_namespaces = 1;
     else {
       fprintf(stderr, "setup-seccomp: unknown option: %s\n", argv[i]);
       return 1;
@@ -209,27 +213,35 @@ int main(int argc, char *argv[]) {
   ret |= block_syscall(ctx, SCMP_SYS(set_mempolicy), EPERM);
   ret |= block_syscall(ctx, SCMP_SYS(migrate_pages), EPERM);
 
-  /* Don't allow subnamespace setups */
-  ret |= block_syscall(ctx, SCMP_SYS(unshare), EPERM);
+  /* Don't allow subnamespace setups. Applications with their own sandbox may
+   * opt in to creating a user namespace, but no other unshare() flags. */
+  if (allow_user_namespaces)
+    ret |= block_syscall_arg(ctx, SCMP_SYS(unshare), EPERM,
+                             SCMP_A0(SCMP_CMP_NE, CLONE_NEWUSER));
+  else
+    ret |= block_syscall(ctx, SCMP_SYS(unshare), EPERM);
   ret |= block_syscall(ctx, SCMP_SYS(setns), EPERM);
   ret |= block_syscall(ctx, SCMP_SYS(mount), EPERM);
   ret |= block_syscall(ctx, SCMP_SYS(umount), EPERM);
   ret |= block_syscall(ctx, SCMP_SYS(umount2), EPERM);
   ret |= block_syscall(ctx, SCMP_SYS(pivot_root), EPERM);
-  ret |= block_syscall(ctx, SCMP_SYS(chroot), EPERM);
+  if (!allow_user_namespaces)
+    ret |= block_syscall(ctx, SCMP_SYS(chroot), EPERM);
 
   /* Block clone() with CLONE_NEWUSER flag */
+  if (!allow_user_namespaces) {
 #if defined(__s390__) || defined(__s390x__) || defined(__CRIS__)
-  /* CONFIG_CLONE_BACKWARDS2: flags are the second arg */
-  ret |= block_syscall_arg(
-      ctx, SCMP_SYS(clone), EPERM,
-      SCMP_A1(SCMP_CMP_MASKED_EQ, CLONE_NEWUSER, CLONE_NEWUSER));
+    /* CONFIG_CLONE_BACKWARDS2: flags are the second arg */
+    ret |= block_syscall_arg(
+        ctx, SCMP_SYS(clone), EPERM,
+        SCMP_A1(SCMP_CMP_MASKED_EQ, CLONE_NEWUSER, CLONE_NEWUSER));
 #else
-  /* Normally flags are the first arg */
-  ret |= block_syscall_arg(
-      ctx, SCMP_SYS(clone), EPERM,
-      SCMP_A0(SCMP_CMP_MASKED_EQ, CLONE_NEWUSER, CLONE_NEWUSER));
+    /* Normally flags are the first arg */
+    ret |= block_syscall_arg(
+        ctx, SCMP_SYS(clone), EPERM,
+        SCMP_A0(SCMP_CMP_MASKED_EQ, CLONE_NEWUSER, CLONE_NEWUSER));
 #endif
+  }
 
   /* Don't allow faking input to the controlling tty (CVE-2017-5226) */
   ret |= block_syscall_arg(ctx, SCMP_SYS(ioctl), EPERM,

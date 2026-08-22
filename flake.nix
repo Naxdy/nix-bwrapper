@@ -215,6 +215,8 @@
 
           seccomp = pkgs.callPackage ./tests/seccomp.nix { };
           seccomp-multiarch = pkgs.callPackage ./tests/seccomp-multiarch.nix { };
+
+          electron-sandbox = pkgs.callPackage ./tests/electron-sandbox.nix { };
         }
       );
     };

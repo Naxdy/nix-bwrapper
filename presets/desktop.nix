@@ -54,6 +54,7 @@ in
     fhsenv = {
       performDesktopPostInstall = mkDefault (!config.app.isFhsenv);
       opts = {
+        allowNestedUserNamespaces = mkDefault true;
         unshareUser = mkDefault false;
         unshareUts = mkDefault false;
         unshareCgroup = mkDefault false;

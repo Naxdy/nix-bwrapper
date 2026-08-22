@@ -21,6 +21,7 @@ let
         unsharePid
         unshareNet
         dieWithParent
+        allowNestedUserNamespaces
         ;
 
       inherit runScript;
@@ -81,6 +82,7 @@ in
         unshareCgroup ? false,
         privateTmp ? false,
         dieWithParent ? true,
+        allowNestedUserNamespaces ? false,
         ...
       }@args:
       let
