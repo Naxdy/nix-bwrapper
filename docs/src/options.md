@@ -11,7 +11,7 @@ integrate with your DE and your theming, and as such includes a number of read-o
 directories (e.g. `~/.fonts`, `~/.icons`, etc.). If you don't need this behavior (e.g. because you're sandboxing a CLI
 app), you can omit importing this preset.
 
-For details on the exact configuration this preset provides, see its [doc page](./prsets/desktop.md).
+For details on the exact configuration this preset provides, see its [doc page](./presets/desktop.md).
 
 The preset's configuration can be overridden just like in any other NixOS module, by using `lib.mkForce`. For example:
 
