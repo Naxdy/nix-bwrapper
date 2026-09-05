@@ -81,6 +81,25 @@ in
         DISPLAY = "$DISPLAY";
       };
     };
+    secrets = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      description = ''
+        A set of secrets to retrieve from your secret service and make available to the sandboxed application
+        as environment variables.
+
+        Secrets are retrieved from your secret service implementation (e.g. KWallet, gnome-keyring, KeePassXC) using
+        `sscli` by specifying its `xdg:schema` property. So, for example, the binding `GITHUB_MCP_PAT = "alice.github-mcp";`
+        tells `sscli` to look for an entry with `xdg:schema=alice.github-mcp` and binds it to the `GITHUB_MCP_PAT`
+        environment variable within the sandbox.
+
+        If you're using KeePassXC, it's sufficient to create an entry that has an additional attribute named `xdg:schema`
+        containing the value of your choice; for this example it would be `alice.github-mcp`.
+      '';
+      default = { };
+      example = {
+        GITHUB_MCP_PAT = "alice.github-mcp";
+      };
+    };
     package-unwrapped = lib.mkOption {
       type = lib.types.nullOr lib.types.package;
       default = if cfg.isFhsenv then (builtins.elemAt (cfg.package.args.targetPkgs pkgs) 0) else null;

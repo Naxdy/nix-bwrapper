@@ -1,6 +1,12 @@
-{ pkgs, nixpkgs }:
+{
+  pkgs,
+  nixpkgs,
+  sscli,
+}:
 let
   inherit (pkgs) lib;
+
+  sscliPkg = sscli.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
   mainModule =
     { config, lib, ... }:
@@ -77,6 +83,7 @@ let
       specialArgs = {
         inherit nixpkgs pkgs;
         inherit (pkgs) lib;
+        sscli = sscliPkg;
       };
     };
 

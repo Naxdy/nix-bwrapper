@@ -3,6 +3,7 @@
   lib,
   pkgs,
   nixpkgs,
+  sscli,
   ...
 }:
 let
@@ -165,10 +166,16 @@ in
       ++ (lib.unique (
         lib.mapAttrsToList (
           name: value:
-          "--setenv ${name} ${
+          ''--setenv "${name}" ${
             if builtins.typeOf value == "string" then ("\"${value}\"") else (builtins.toString value)
-          }"
+          }''
         ) config.app.env
+      ))
+      ++ (lib.unique (
+        lib.mapAttrsToList (
+          name: value:
+          ''--setenv "${name}" "''$(${lib.getExe' sscli "sscli"} get-entry --props 'xdg:schema=${lib.escapeShellArg value}')"''
+        ) config.app.secrets
       ));
 
       fhsenv.bwrap.finalArgs = cfg.bwrap.baseArgs ++ cfg.bwrap.additionalArgs;
