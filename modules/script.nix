@@ -34,7 +34,7 @@ in
 
   config = {
     script.preCmds.combined = ''
-      trap 'trap - SIGTERM && kill -- -$$' SIGINT SIGTERM EXIT
+      trap 'trap - SIGTERM && kill $(jobs -p) 2>/dev/null' SIGINT SIGTERM EXIT
 
       # Stage 1
       ${cfg.preCmds.stage1}

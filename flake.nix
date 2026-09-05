@@ -219,6 +219,7 @@
           electron-sandbox = pkgs.callPackage ./tests/electron-sandbox.nix { };
 
           devshell-binds = pkgs.callPackage ./tests/devshell-binds.nix { };
+          wrapper-cleanup = pkgs.callPackage ./tests/wrapper-cleanup.nix { };
         }
       );
     };

@@ -1,21 +1,6 @@
 { testers, pkgs }:
 let
-  # Minimal "devshell" style app: forwards its arguments to `bash`, so that the
-  # test can inspect the resulting sandbox from within.
-  devshellProbe = pkgs.stdenv.mkDerivation {
-    pname = "devshell-probe";
-    version = "1";
-    dontUnpack = true;
-    phases = [ "installPhase" ];
-    installPhase = ''
-      mkdir -p $out/bin
-      {
-        echo '#!/bin/sh'
-        echo 'exec bash "$@"'
-      } > $out/bin/devshell-probe
-      chmod +x $out/bin/devshell-probe
-    '';
-  };
+  devshellProbe = import ./probe.nix { inherit pkgs; };
 
   bwrappedProbe = pkgs.mkBwrapper {
     imports = [ pkgs.bwrapperPresets.devshell ];
