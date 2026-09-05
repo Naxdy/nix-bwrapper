@@ -9,6 +9,8 @@ Key features:
 - supports config presets by way of nixpkgs' module system
   - Nix-Bwrapper also comes with a couple presets out of the box to help get you started
 - can pre-configure entire applications based on their Flatpak manifest file
+- securely share select secrets (e.g. API tokens) with sandboxed apps from your secret service via
+  [`sscli`](https://github.com/Naxdy/sscli)
 - properly sandbox X11 apps via `xwayland-satellite` in such a way that they cannot even spy on other X11 apps
 - full interoparability with portals, e.g. to selectively read / save files outside the sandbox
 - selective filtering of dbus interfaces via `xdg-dbus-proxy` and the operations an application may perform on them

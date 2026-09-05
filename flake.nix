@@ -13,6 +13,11 @@
       url = "https://flakehub.com/f/numtide/treefmt-nix/*";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    sscli = {
+      url = "github:Naxdy/sscli";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -21,6 +26,7 @@
       nixpkgs,
       nuschtosSearch,
       treefmt-nix,
+      sscli,
     }:
     let
       supportedSystems = [
@@ -95,7 +101,7 @@
             bwrapperPresetsMeta = bwrapperLib.presets-meta;
           };
 
-        forPkgs = pkgs: import ./modules { inherit pkgs nixpkgs; };
+        forPkgs = pkgs: import ./modules { inherit pkgs nixpkgs sscli; };
       };
 
       formatter = forEachSupportedSystem ({ treefmtEval, ... }: treefmtEval.config.build.wrapper);
