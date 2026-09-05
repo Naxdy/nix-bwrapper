@@ -156,9 +156,21 @@ in
           ${pkgs.xdg-dbus-proxy}/bin/xdg-dbus-proxy unix:path=/run/dbus/system_bus_socket "$XDG_RUNTIME_DIR/app/${config.app.id}/bus_system" --filter ${lib.optionalString cfg.logging "--log"} ${cfg.system.args}
       }
 
+      dbus_proxy_dir="$XDG_RUNTIME_DIR/app/${config.app.id}"
+      ${pkgs.coreutils}/bin/rm -f "$dbus_proxy_dir/bus" "$dbus_proxy_dir/bus_system"
       set_up_dbus_proxy &
       set_up_system_dbus_proxy &
-      ${pkgs.coreutils}/bin/sleep 0.1
+
+      # Busy-waiting here is actually cheaper than spawning a single `sleep 0.001` in most scenarios,
+      # since the sockets normally appear extremely quickly.
+      dbus_proxy_spins=0
+      while [[ ! -e "$dbus_proxy_dir/bus" || ! -e "$dbus_proxy_dir/bus_system" ]]; do
+        if [[ $dbus_proxy_spins -ge 30000 ]]; then
+          echo "WARN: dbus proxy sockets never appeared. If the host machine doesn't have dbus, consider setting \`config.dbus.enable = false;\`"
+          break
+        fi
+        dbus_proxy_spins=$((dbus_proxy_spins + 1))
+      done
     '';
 
     fhsenv.bwrap.additionalArgs = [
