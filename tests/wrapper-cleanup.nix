@@ -1,16 +1,21 @@
-{ testers, pkgs }:
+{
+  testers,
+  callPackage,
+  bashInteractive,
+  mkBwrapper,
+}:
 let
-  devshellProbe = import ./probe.nix { inherit pkgs; };
+  devshellProbe = callPackage ./probe.nix { };
 
   # DBus forwarding starts `xdg-dbus-proxy` inside a background `bwrap` for both
   # the session and the system bus. Those helpers are what the wrapper's
   # `trap ... EXIT` has to reap.
-  bwrappedDbusProbe = pkgs.mkBwrapper {
+  bwrappedDbusProbe = mkBwrapper {
     app = {
       package = devshellProbe;
       runScript = "devshell-probe";
       # the probe needs `bash` within the FHS environment
-      addPkgs = [ pkgs.bashInteractive ];
+      addPkgs = [ bashInteractive ];
     };
 
     # the wrapper enters the sandbox with `--chdir "$PWD"`

@@ -1,7 +1,10 @@
-{ testers, pkgs }:
-
+{
+  mkBwrapper,
+  stdenv,
+  testers,
+}:
 let
-  seccompProbe = pkgs.stdenv.mkDerivation {
+  seccompProbe = stdenv.mkDerivation {
     pname = "seccomp-probe";
     version = "1";
     dontUnpack = true;
@@ -14,7 +17,7 @@ let
     '';
   };
 
-  bwrappedProbe = pkgs.mkBwrapper {
+  bwrappedProbe = mkBwrapper {
     app = {
       package = seccompProbe;
       runScript = "probe";

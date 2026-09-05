@@ -1,15 +1,21 @@
-{ testers, pkgs }:
+{
+  bashInteractive,
+  bwrapperPresets,
+  callPackage,
+  mkBwrapper,
+  testers,
+}:
 let
-  devshellProbe = import ./probe.nix { inherit pkgs; };
+  devshellProbe = callPackage ./probe.nix { };
 
-  bwrappedProbe = pkgs.mkBwrapper {
-    imports = [ pkgs.bwrapperPresets.devshell ];
+  bwrappedProbe = mkBwrapper {
+    imports = [ bwrapperPresets.devshell ];
 
     app = {
       package = devshellProbe;
       runScript = "devshell-probe";
       # the probe needs `bash` within the FHS environment
-      addPkgs = [ pkgs.bashInteractive ];
+      addPkgs = [ bashInteractive ];
     };
   };
 in

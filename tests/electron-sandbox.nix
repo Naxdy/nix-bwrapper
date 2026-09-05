@@ -1,7 +1,8 @@
 {
-  pkgs,
   lib,
-  ...
+  mkBwrapper,
+  chromium,
+  testers,
 }:
 
 # Regression test for the Chromium/Electron process sandbox inside the bubblewrap
@@ -29,14 +30,13 @@
 # regressions of the fix.
 
 let
-
   makeChromium =
     userns:
-    pkgs.mkBwrapper (
+    mkBwrapper (
       {
         # Minimal wrapper: the seccomp filter is applied regardless of presets.
         app = {
-          package = pkgs.chromium;
+          package = chromium;
           runScript = "chromium";
         };
       }
@@ -90,9 +90,8 @@ let
           ''
       }
     '';
-
 in
-pkgs.testers.runNixOSTest {
+testers.runNixOSTest {
   name = "nix-bwrapper-electron-sandbox";
 
   nodes.machine =

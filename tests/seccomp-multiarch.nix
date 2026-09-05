@@ -1,4 +1,14 @@
-{ pkgs }:
+{
+  callPackage,
+  coreutils,
+  gnugrep,
+  hello,
+  libseccomp,
+  mkBwrapper,
+  runCommand,
+  runCommandLocal,
+  stdenv,
+}:
 # Regression test for https://github.com/Naxdy/nix-bwrapper/issues/56.
 # A multilib (multiArch) FHS env spans two architectures (x86_64 + x86),
 # which made the seccomp-bpf derivation fail to build. This check
@@ -12,18 +22,18 @@ let
   # Mimic how nixpkgs packages like lutris are structured: the package
   # function takes `buildFHSEnv` as an argument, so bwrapper can override it
   # (and keep `multiArch`) via `app.isFhsenv = true`.
-  multilibProbe = pkgs.callPackage (
+  multilibProbe = callPackage (
     { buildFHSEnv }:
     buildFHSEnv {
       pname = "seccomp-probe-multiarch";
       version = "1";
       runScript = "probe";
-      targetPkgs = p: [ pkgs.hello ];
+      targetPkgs = p: [ hello ];
       multiArch = true;
     }
   ) { };
 
-  wrappedMultiarch = pkgs.mkBwrapper {
+  wrappedMultiarch = mkBwrapper {
     app = {
       package = multilibProbe;
       isFhsenv = true;
@@ -32,11 +42,11 @@ let
   };
 
   checkBpf =
-    pkgs.runCommandLocal "seccomp-multiarch-check"
+    runCommandLocal "seccomp-multiarch-check"
       {
         nativeBuildInputs = [
-          pkgs.gnugrep
-          pkgs.coreutils
+          gnugrep
+          coreutils
         ];
       }
       ''
@@ -70,9 +80,9 @@ let
 
         # Compile setup-seccomp.c exactly like the production derivation
         # (build-fhsenv-bubblewrap/default.nix).
-        ${pkgs.stdenv.cc}/bin/cc -O2 -I${pkgs.libseccomp.dev}/include \
+        ${stdenv.cc}/bin/cc -O2 -I${libseccomp.dev}/include \
           -o setup-seccomp ${../build-fhsenv-bubblewrap/setup-seccomp.c} \
-          -L${pkgs.libseccomp.lib}/lib -Wl,-rpath,${pkgs.libseccomp.lib}/lib \
+          -L${libseccomp.lib}/lib -Wl,-rpath,${libseccomp.lib}/lib \
           -lseccomp
 
         # --- Single-arch filter: security-critical path is unchanged. ---
@@ -108,7 +118,7 @@ let
         echo "setup-seccomp single/multiarch assertions passed" > $out/result
       '';
 in
-if pkgs.stdenv.hostPlatform.isx86_64 then
+if stdenv.hostPlatform.isx86_64 then
   checkBpf
 else
-  (pkgs.runCommand "seccomp-multiarch" { } "echo 'multiarch not supported on this platform' > $out")
+  (runCommand "seccomp-multiarch" { } "echo 'multiarch not supported on this platform' > $out")
