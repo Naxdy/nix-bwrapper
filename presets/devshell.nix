@@ -106,13 +106,13 @@ in
       BWRAP_MOUNTS_RO="$HOME/git/my-other-project" nvim-bwrapped
       ```
 
-      This spawns a bwrapped `nvim` with read-write access to `$HOME/my-projets` (since that's the current directory), and
-      read-only access to `$HOME/git/my-other-project`. The two environment variables can be combined:
+      This spawns a bwrapped `nvim` with read-write access to `$HOME/git/my-project` (since that's the current
+      directory), and read-only access to `$HOME/git/my-other-project`. The two environment variables can be combined:
 
       ```bash
       cd ~/git/my-project
 
-      BWRAP_MOUNTS_RO="$HOME/git/my-readwrite-project:$HOME/git/my-other-readonly-project" BWRAP_MOUNTS_RW="$HOME/git/my-readwrite-project" nvim-bwrapped
+      BWRAP_MOUNTS_RO="$HOME/git/my-readonly-project:$HOME/git/my-other-readonly-project" BWRAP_MOUNTS_RW="$HOME/git/my-readwrite-project" nvim-bwrapped
       ```
 
       This allows you to sandbox commonly used tools like text editors without having to create separate wrappers for each
