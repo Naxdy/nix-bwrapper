@@ -174,7 +174,7 @@ in
       ++ (lib.unique (
         lib.mapAttrsToList (
           name: value:
-          ''--setenv "${name}" "''$(${lib.getExe' sscli "sscli"} get-entry --props 'xdg:schema=${lib.escapeShellArg value}')"''
+          ''--setenv "${name}" "''${${name}:-''$(${lib.getExe' sscli "sscli"} get-entry --props 'xdg:schema=${lib.escapeShellArg value}')}"''
         ) config.app.secrets
       ));
 
