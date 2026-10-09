@@ -55,9 +55,9 @@ At the moment, bwrapper supports pre-filling options for the following:
   `xdg-download`, `xdg-music`, `xdg-pictures`, `xdg-public-share`, `xdg-templates`, `xdg-videos`, `xdg-run`,
   `xdg-config`, `xdg-cache`, `xdg-data`
 - `mounts.sandbox`
-- `dbus.{session,system}.{talks,owns,calls}`
+- `dbus.session.{talks,owns,calls}` and `dbus.system.{talks,calls}`
 
-### Inspecing & overriding options
+### Inspecting & overriding options
 
 If you want to see exactly what the final config will be, you can use `bwrapperEval` and inspect the resulting `config`
 attribute, for example:
